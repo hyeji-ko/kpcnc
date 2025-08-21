@@ -39,6 +39,7 @@
         return [];
       }
     },
+    
     /** @param {StudyRecord[]} records */
     async saveRecords(records) {
       localStorage.setItem(LOCAL_KEY, JSON.stringify(records));
@@ -67,7 +68,7 @@
   async function getRemoteImpl() {
     if (remoteImpl) return remoteImpl;
     if (remoteDisabled) return null;
-    if (typeof window !== 'undefined' && window.FIREBASE_DISABLE_REMOTE) {
+    if (typeof window !== 'undefined'  && window.FIREBASE_DISABLE_REMOTE) {
       disableRemote();
       return null;
     }
@@ -96,6 +97,7 @@
       disableRemote();
       return null; // Return null so callers fall back gracefully
     }
+    
     const uid = userCred.user?.uid || 'anonymous';
     const db = getFirestore(app);
 
