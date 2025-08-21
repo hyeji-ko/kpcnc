@@ -8,7 +8,7 @@
   --border: #1f2633;
   --accent: #2b3648;
 }
- 
+
 * {
   box-sizing: border-box;
 }
@@ -172,5 +172,4 @@ table.data-table {
   color: var(--muted);
   text-align: center;
 }
-
 
