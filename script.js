@@ -13,18 +13,35 @@
     const formMessage = document.getElementById("formMessage");
     const tbody = document.getElementById("recordsTbody");
 
-    // DB initialization (remote if configured, otherwise local fallback)
-    const DB = window.DB;
-    try {
-      await DB.init();
-    } catch (e) {
-      console.warn("DB init failed, continuing with local fallback if available", e);
+    // Provide robust DB fallback if db.js didn't load
+    function getDB() {
+      const LOCAL_KEY = "studyRecords";
+      const localDB = {
+        async init() { return false; },
+        async loadRecords() {
+          try {
+            const raw = localStorage.getItem(LOCAL_KEY);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed
+              .filter(Boolean)
+              .map((r) => ({ date: String(r.date), hours: Number(r.hours) }))
+              .filter((r) => r.date && Number.isFinite(r.hours));
+          } catch { return []; }
+        },
+        async addRecord(record) {
+          const rows = await this.loadRecords();
+          rows.push(record);
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(rows));
+        }
+      };
+      return (window.DB || localDB);
     }
 
-    // Init view: show grid by default
-    showGrid();
-    await renderGrid();
+    const DB = getDB();
 
+    // Attach listeners BEFORE any awaits so UI remains responsive
     registerBtn.addEventListener("click", async () => {
       showForm();
       // Defer to ensure element is visible before invoking picker
@@ -89,6 +106,23 @@
       showGrid();
       await renderGrid();
     });
+
+    // Now perform async init and first render safely
+    try {
+      if (typeof DB.init === "function") {
+        await DB.init();
+      }
+    } catch (e) {
+      console.warn("DB init failed, continuing with local fallback if available", e);
+    }
+
+    // Init view: show grid by default
+    showGrid();
+    try {
+      await renderGrid();
+    } catch (e) {
+      console.warn("Initial render failed", e);
+    }
 
     function showForm() {
       formSection.classList.remove("hidden");
@@ -201,5 +235,3 @@
     }
   });
 })();
-
-
