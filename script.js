@@ -16,7 +16,12 @@
     const prevPageBtn = document.getElementById("prevPageBtn");
     const nextPageBtn = document.getElementById("nextPageBtn");
     const pageInfo = document.getElementById("pageInfo");
-    const monthPicker = document.getElementById("monthPicker");
+    const monthDisplay = document.getElementById("monthDisplay");
+    const monthCalendar = document.getElementById("monthCalendar");
+    const currentMonthText = document.getElementById("currentMonthText");
+    const yearDisplay = document.getElementById("yearDisplay");
+    const monthItems = document.querySelectorAll('.month-item');
+    const yearItems = document.querySelectorAll('.year-item');
 
     // Provide robust DB fallback if db.js didn't load
     function getDB() {
@@ -50,6 +55,10 @@
     // 페이지네이션 관련 변수
     let currentPage = 0;
     const pageSize = 7; // 7일 단위
+    
+    // 현재 선택된 년월
+    let selectedYear = new Date().getFullYear();
+    let selectedMonth = new Date().getMonth() + 1;
 
     // Attach listeners BEFORE any awaits so UI remains responsive
     registerBtn.addEventListener("click", async () => {
@@ -75,11 +84,11 @@
       showGrid();
       currentPage = 0; // 조회 시 첫 페이지로 이동
       
-      // 현재 년월로 월 선택기 설정
+      // 현재 년월로 설정
       const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
-      monthPicker.value = `${currentYear}-${currentMonth}`;
+      selectedYear = now.getFullYear();
+      selectedMonth = now.getMonth() + 1;
+      updateMonthDisplay();
       
       await renderGrid();
     });
@@ -97,10 +106,44 @@
       await renderGrid();
     });
     
-    // 월 선택기 이벤트 리스너
-    monthPicker.addEventListener("change", async () => {
-      currentPage = 0; // 월 변경 시 첫 페이지로 이동
-      await renderGrid();
+    // 커스텀 달력 이벤트 리스너
+    monthDisplay.addEventListener("click", () => {
+      monthCalendar.classList.toggle("hidden");
+      updateCalendarDisplay();
+    });
+    
+    // 월 선택 이벤트
+    monthItems.forEach(item => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const month = parseInt(item.dataset.month);
+        selectedMonth = month;
+        updateMonthDisplay();
+        monthCalendar.classList.add("hidden");
+        currentPage = 0;
+        renderGrid();
+      });
+    });
+    
+    // 년도 선택 이벤트
+    yearItems.forEach(item => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const year = parseInt(item.dataset.year);
+        selectedYear = year;
+        updateCalendarDisplay();
+        updateMonthDisplay();
+        monthCalendar.classList.add("hidden");
+        currentPage = 0;
+        renderGrid();
+      });
+    });
+    
+    // 달력 외부 클릭 시 닫기
+    document.addEventListener("click", (e) => {
+      if (!monthDisplay.contains(e.target) && !monthCalendar.contains(e.target)) {
+        monthCalendar.classList.add("hidden");
+      }
     });
 
     // Input sanitization: allow digits and at most one decimal point with one digit
@@ -225,6 +268,7 @@
 
     // Init view: show grid by default
     showGrid();
+    updateMonthDisplay();
     try {
       await renderGrid();
     } catch (e) {
@@ -282,24 +326,20 @@
       tbody.innerHTML = "";
       
       // 선택된 년월의 데이터만 필터링
-      const selectedMonth = monthPicker.value;
       let filteredRecords = records;
       
-      if (selectedMonth) {
-        const [year, month] = selectedMonth.split('-');
-        filteredRecords = records.filter(record => {
-          const recordDate = new Date(record.date);
-          return recordDate.getFullYear() === parseInt(year) && 
-                 recordDate.getMonth() === parseInt(month) - 1;
-        });
-      }
+      filteredRecords = records.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getFullYear() === selectedYear && 
+               recordDate.getMonth() === selectedMonth - 1;
+      });
       
       if (filteredRecords.length === 0) {
         const tr = document.createElement("tr");
         tr.className = "empty-row";
         const td = document.createElement("td");
         td.colSpan = 5;
-        td.textContent = selectedMonth ? "선택한 년월에 등록된 데이터가 없습니다." : "등록된 데이터가 없습니다.";
+        td.textContent = "선택한 년월에 등록된 데이터가 없습니다.";
         tr.appendChild(td);
         tbody.appendChild(tr);
         paginationNav.classList.add("hidden");
@@ -421,6 +461,26 @@
       // 버튼 스타일 조정
       prevPageBtn.classList.toggle("disabled", currentPage === 0);
       nextPageBtn.classList.toggle("disabled", currentPage >= totalPages - 1);
+    }
+    
+    // 달력 표시 업데이트
+    function updateCalendarDisplay() {
+      yearDisplay.textContent = selectedYear;
+      
+      // 선택된 년도 하이라이트
+      yearItems.forEach(item => {
+        item.classList.toggle("selected", parseInt(item.dataset.year) === selectedYear);
+      });
+      
+      // 선택된 월 하이라이트
+      monthItems.forEach(item => {
+        item.classList.toggle("selected", parseInt(item.dataset.month) === selectedMonth);
+      });
+    }
+    
+    // 월 표시 텍스트 업데이트
+    function updateMonthDisplay() {
+      currentMonthText.textContent = `${selectedYear}년 ${String(selectedMonth).padStart(2, '0')}월`;
     }
 
     function clearMessage() {
