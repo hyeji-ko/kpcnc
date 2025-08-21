@@ -1,6 +1,6 @@
 (() => {
 
-  /** @typedef {{ date: string; hours: number }} StudyRecord  */
+  /** @typedef {{ date: string; hours: number }} StudyRecord */
 
   document.addEventListener("DOMContentLoaded", async () => {
     const registerBtn = document.getElementById("registerBtn");
@@ -115,7 +115,28 @@
         const id = target.getAttribute('data-id');
         if (id) {
           if (target.checked) selectedIds.add(id); else selectedIds.delete(id);
-          await renderGrid();
+          // Toggle actions inline for faster UX without full re-render
+          const tr = target.closest('tr');
+          if (tr) {
+            const actionsTd = tr.querySelector('td.actions-cell');
+            if (actionsTd) {
+              actionsTd.innerHTML = '';
+              if (target.checked) {
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'btn edit-btn';
+                editBtn.textContent = '수정';
+                editBtn.setAttribute('data-id', String(id));
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'btn delete-btn';
+                delBtn.textContent = '삭제';
+                delBtn.style.marginLeft = '6px';
+                delBtn.setAttribute('data-id', String(id));
+                actionsTd.append(editBtn, delBtn);
+              }
+            }
+          }
         }
       }
     });
@@ -276,6 +297,7 @@
 
         // actions
         const tdActions = document.createElement('td');
+        tdActions.className = 'actions-cell';
         const isSelected = rec.id ? selectedIds.has(String(rec.id)) : false;
         if (isSelected) {
           const editBtn = document.createElement('button');
@@ -320,6 +342,5 @@
     }
   });
 })();
-
 
 
