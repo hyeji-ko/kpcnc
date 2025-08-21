@@ -67,7 +67,39 @@
         <div class="grid-header">
           <h2 class="card-title">학습시간 조회</h2>
           <div class="month-picker">
-            <input type="month" id="monthPicker" />
+            <div class="month-display" id="monthDisplay">
+              <span id="currentMonthText">2025년 08월</span>
+              <span class="month-arrow">▼</span>
+            </div>
+            <div class="month-calendar hidden" id="monthCalendar">
+              <div class="calendar-header">
+                <div class="year-display" id="yearDisplay">2025</div>
+                <div class="month-grid">
+                  <div class="month-item" data-month="1">1</div>
+                  <div class="month-item" data-month="2">2</div>
+                  <div class="month-item" data-month="3">3</div>
+                  <div class="month-item" data-month="4">4</div>
+                  <div class="month-item" data-month="5">5</div>
+                  <div class="month-item" data-month="6">6</div>
+                  <div class="month-item" data-month="7">7</div>
+                  <div class="month-item" data-month="8">8</div>
+                  <div class="month-item" data-month="9">9</div>
+                  <div class="month-item" data-month="10">10</div>
+                  <div class="month-item" data-month="11">11</div>
+                  <div class="month-item" data-month="12">12</div>
+                </div>
+                <div class="year-list" id="yearList">
+                  <div class="year-item" data-year="2023">2023</div>
+                  <div class="year-item" data-year="2024">2024</div>
+                  <div class="year-item" data-year="2025">2025</div>
+                  <div class="year-item" data-year="2026">2026</div>
+                  <div class="year-item" data-year="2027">2027</div>
+                  <div class="year-item" data-year="2028">2028</div>
+                  <div class="year-item" data-year="2029">2029</div>
+                  <div class="year-item" data-year="2030">2030</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="table-wrap">
