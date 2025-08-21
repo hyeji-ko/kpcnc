@@ -1,6 +1,6 @@
 (() => {
 
-  /** @typedef {{ date: string; hours: number }} StudyRecord */
+  /** @typedef {{ date: string; hours: number }} StudyRecord  */
 
   document.addEventListener("DOMContentLoaded", async () => {
     const registerBtn = document.getElementById("registerBtn");
@@ -320,5 +320,6 @@
     }
   });
 })();
+
 
 
