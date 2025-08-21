@@ -66,7 +66,13 @@
 
     const app = initializeApp(config);
     const auth = getAuth(app);
-    const userCred = await signInAnonymously(auth);
+    let userCred;
+    try {
+      userCred = await signInAnonymously(auth);
+    } catch (e) {
+      console.warn('Anonymous auth failed, returning to local fallback.', e);
+      return null; // Return null so callers fall back gracefully
+    }
     const uid = userCred.user?.uid || 'anonymous';
     const db = getFirestore(app);
 
@@ -111,13 +117,35 @@
     },
     /** @returns {Promise<StudyRecord[]>} */
     async loadRecords() {
-      const impl = (await getRemoteImpl()) || localImpl;
-      return impl.loadRecords();
+      try {
+        const impl = await getRemoteImpl();
+        if (impl) {
+          const remoteRows = await impl.loadRecords();
+          if (Array.isArray(remoteRows) && remoteRows.length > 0) {
+            return remoteRows;
+          }
+        }
+      } catch (e) {
+        console.warn('Remote load failed, using localStorage.', e);
+      }
+      // If remote empty or failed, use local cache
+      return localImpl.loadRecords();
     },
     /** @param {StudyRecord} record */
     async addRecord(record) {
-      const impl = (await getRemoteImpl()) || localImpl;
-      return impl.addRecord(record);
+      let savedRemote = false;
+      try {
+        const impl = await getRemoteImpl();
+        if (impl) {
+          await impl.addRecord(record);
+          savedRemote = true;
+        }
+      } catch (e) {
+        console.warn('Remote save failed, saving to localStorage.', e);
+      }
+      // Always cache locally so UI can show data even if remote is empty or delayed
+      await localImpl.addRecord(record);
+      return savedRemote;
     },
     /** @returns {Promise<boolean>} */
     async isRemote() {
@@ -129,3 +157,5 @@
   // Expose globally for non-module consumer scripts
   window.DB = DB;
 })();
+
+
