@@ -2,7 +2,7 @@
 // - If window.FIREBASE_CONFIG is defined, uses Firebase Firestore with anonymous auth
 // - Otherwise falls back to localStorage
 
-(() =>  {
+(() => {
   const LOCAL_KEY = "studyRecords";
 
   /** @typedef {{ id?: string; date: string; hours: number }} StudyRecord */
@@ -272,6 +272,5 @@
   // Expose globally for non-module consumer scripts
   window.DB = DB;
 })();
-
 
 
