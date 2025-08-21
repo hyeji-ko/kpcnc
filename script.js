@@ -40,6 +40,7 @@
     }
 
     const DB = getDB();
+    const selectedIds = new Set();
 
     // Attach listeners BEFORE any awaits so UI remains responsive
     registerBtn.addEventListener("click", async () => {
@@ -105,6 +106,55 @@
       // Show list after save
       showGrid();
       await renderGrid();
+    });
+
+    // Row interactions: checkbox toggle, edit, delete
+    tbody.addEventListener("change", async (e) => {
+      const target = e.target;
+      if (target && target.matches('input.row-check')) {
+        const id = target.getAttribute('data-id');
+        if (id) {
+          if (target.checked) selectedIds.add(id); else selectedIds.delete(id);
+          await renderGrid();
+        }
+      }
+    });
+
+    tbody.addEventListener("click", async (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.closest('.edit-btn')) {
+        const id = target.getAttribute('data-id');
+        if (!id) return;
+        // Load current hours to prefill
+        const records = await DB.loadRecords();
+        const rec = records.find(r => String(r.id) === id);
+        const current = rec ? String(rec.hours) : '';
+        const input = window.prompt('새 학습시간(소수 1자리까지):', current);
+        if (input == null) return; // cancel
+        const trimmed = input.trim();
+        const validPattern = /^\d+(?:\.\d)?$/;
+        if (!validPattern.test(trimmed)) {
+          alert('숫자만 입력, 소숫점은 1자리까지 가능합니다.');
+          return;
+        }
+        const num = parseFloat(trimmed);
+        if (!Number.isFinite(num) || num < 0) {
+          alert('0 이상의 숫자를 입력하세요.');
+          return;
+        }
+        const normalized = Math.round(num * 10) / 10;
+        await DB.updateRecord(id, { hours: normalized });
+        await renderGrid();
+      } else if (target.closest('.delete-btn')) {
+        const id = target.getAttribute('data-id');
+        if (!id) return;
+        const ok = window.confirm('이 항목을 삭제하시겠습니까?');
+        if (!ok) return;
+        await DB.deleteRecord(id);
+        selectedIds.delete(id);
+        await renderGrid();
+      }
     });
 
     // Now perform async init and first render safely
@@ -177,7 +227,7 @@
         const tr = document.createElement("tr");
         tr.className = "empty-row";
         const td = document.createElement("td");
-        td.colSpan = 3;
+        td.colSpan = 5;
         td.textContent = "등록된 데이터가 없습니다.";
         tr.appendChild(td);
         tbody.appendChild(tr);
@@ -200,14 +250,49 @@
       for (let i = 0; i < sorted.length; i++) {
         const rec = sorted[i];
         const tr = document.createElement("tr");
+        tr.setAttribute('data-id', String(rec.id || ''));
+
+        // checkbox
+        const tdCheck = document.createElement('td');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'row-check';
+        cb.setAttribute('data-id', String(rec.id || ''));
+        cb.checked = rec.id ? selectedIds.has(String(rec.id)) : false;
+        tdCheck.appendChild(cb);
+
+        // date
         const tdDate = document.createElement("td");
         tdDate.textContent = formatDate(rec.date);
+
+        // hours
         const tdHours = document.createElement("td");
         tdHours.textContent = formatHours(rec.hours);
+
+        // cumulative
         const tdCum = document.createElement("td");
         const idxInAsc = ascending.length - 1 - i; // map back to ascending index
         tdCum.textContent = formatHours(cumByIndex[String(idxInAsc)] || 0);
-        tr.append(tdDate, tdHours, tdCum);
+
+        // actions
+        const tdActions = document.createElement('td');
+        const isSelected = rec.id ? selectedIds.has(String(rec.id)) : false;
+        if (isSelected) {
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'btn edit-btn';
+          editBtn.textContent = '수정';
+          editBtn.setAttribute('data-id', String(rec.id));
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'btn delete-btn';
+          delBtn.textContent = '삭제';
+          delBtn.style.marginLeft = '6px';
+          delBtn.setAttribute('data-id', String(rec.id));
+          tdActions.append(editBtn, delBtn);
+        }
+
+        tr.append(tdCheck, tdDate, tdHours, tdCum, tdActions);
         tbody.appendChild(tr);
       }
     }
@@ -235,3 +320,5 @@
     }
   });
 })();
+
+

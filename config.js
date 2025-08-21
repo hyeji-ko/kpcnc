@@ -11,3 +11,5 @@ window.FIREBASE_CONFIG = {
 };
 // Back-compat alias if needed
 window.firebaseConfig = window.FIREBASE_CONFIG;
+
+

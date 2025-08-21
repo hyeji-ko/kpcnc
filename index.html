@@ -6,6 +6,28 @@
     <title>학습시간 관리</title>
     <link rel="stylesheet" href="style.css" />
     <script src="config.js"></script>
+    <script>
+      (function () {
+        try {
+          var h = location.hostname || '';
+          var proto = location.protocol || '';
+          var sp = new URLSearchParams(location.search || '');
+          var forceLocal = sp.has('local') || sp.has('offline');
+          var isIPv4 = /^\d+\.\d+\.\d+\.\d+$/.test(h);
+          var isPrivateIPv4 = isIPv4 && (
+            h.startsWith('10.') || h.startsWith('192.168.') || (h.startsWith('172.') && (function(){var o=Number(h.split('.')[1]);return o>=16&&o<=31;})())
+          );
+          var isLocalHost = (h === 'localhost' || h === '127.0.0.1' || h === '[::1]');
+          var isMdns = /\.local$/i.test(h);
+          var isFile = proto === 'file:';
+          var shouldDisable = forceLocal || isFile || isLocalHost || isMdns || isPrivateIPv4;
+          if (shouldDisable) {
+            window.FIREBASE_DISABLE_REMOTE = true;
+            try { sessionStorage.setItem('studyRemoteDisabled', '1'); } catch (e) {}
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" src="db.js"></script>
     <script defer src="script.js"></script>
   </head>
@@ -47,13 +69,15 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th scope="col" style="width:40px"></th>
                 <th scope="col">학습날짜</th>
                 <th scope="col">학습시간</th>
                 <th scope="col">누적시간</th>
+                <th scope="col" style="width:160px">작업</th>
               </tr>
             </thead>
             <tbody id="recordsTbody">
-              <tr class="empty-row"><td colspan="3">등록된 데이터가 없습니다.</td></tr>
+              <tr class="empty-row"><td colspan="5">등록된 데이터가 없습니다.</td></tr>
             </tbody>
           </table>
         </div>
