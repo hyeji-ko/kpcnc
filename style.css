@@ -173,3 +173,33 @@ table.data-table {
   text-align: center;
 }
 
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pagination-btn {
+  min-width: 80px;
+}
+
+.page-info {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.pagination-btn:disabled,
+.pagination-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn:disabled:hover,
+.pagination-btn.disabled:hover {
+  filter: none;
+}
+
