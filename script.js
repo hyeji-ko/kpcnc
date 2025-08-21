@@ -12,6 +12,10 @@
     const hoursInput = document.getElementById("hoursInput");
     const formMessage = document.getElementById("formMessage");
     const tbody = document.getElementById("recordsTbody");
+    const paginationNav = document.getElementById("paginationNav");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageInfo = document.getElementById("pageInfo");
 
     // Provide robust DB fallback if db.js didn't load
     function getDB() {
@@ -41,6 +45,10 @@
 
     const DB = getDB();
     const selectedIds = new Set();
+    
+    // 페이지네이션 관련 변수
+    let currentPage = 0;
+    const pageSize = 7; // 7일 단위
 
     // Attach listeners BEFORE any awaits so UI remains responsive
     registerBtn.addEventListener("click", async () => {
@@ -64,6 +72,20 @@
 
     listBtn.addEventListener("click", async () => {
       showGrid();
+      currentPage = 0; // 조회 시 첫 페이지로 이동
+      await renderGrid();
+    });
+    
+    // 페이지네이션 버튼 이벤트 리스너
+    prevPageBtn.addEventListener("click", async () => {
+      if (currentPage > 0) {
+        currentPage--;
+        await renderGrid();
+      }
+    });
+    
+    nextPageBtn.addEventListener("click", async () => {
+      currentPage++;
       await renderGrid();
     });
 
@@ -252,11 +274,18 @@
         td.textContent = "등록된 데이터가 없습니다.";
         tr.appendChild(td);
         tbody.appendChild(tr);
+        paginationNav.classList.add("hidden");
         return;
       }
 
       // Sort by date desc for display
       const sorted = [...records].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+      // 7일 단위로 페이지 계산
+      const totalPages = Math.ceil(sorted.length / pageSize);
+      const startIndex = currentPage * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, sorted.length);
+      const pageRecords = sorted.slice(startIndex, endIndex);
 
       // Compute cumulative from oldest to newest, then map back to sorted order
       const ascending = [...sorted].reverse();
@@ -267,9 +296,10 @@
         running = Math.round((running + ascending[i].hours) * 10) / 10;
         cumByIndex[String(i)] = running;
       }
-      // Now render in sorted (newest first) order, pulling cumulative from reversed index
-      for (let i = 0; i < sorted.length; i++) {
-        const rec = sorted[i];
+
+      // 현재 페이지의 레코드만 렌더링
+      for (let i = 0; i < pageRecords.length; i++) {
+        const rec = pageRecords[i];
         const tr = document.createElement("tr");
         tr.setAttribute('data-id', String(rec.id || ''));
 
@@ -282,9 +312,9 @@
         cb.checked = rec.id ? selectedIds.has(String(rec.id)) : false;
         tdCheck.appendChild(cb);
 
-        // date
+        // date with weekday
         const tdDate = document.createElement("td");
-        tdDate.textContent = formatDate(rec.date);
+        tdDate.textContent = formatDateWithWeekday(rec.date);
 
         // hours
         const tdHours = document.createElement("td");
@@ -292,7 +322,8 @@
 
         // cumulative
         const tdCum = document.createElement("td");
-        const idxInAsc = ascending.length - 1 - i; // map back to ascending index
+        const globalIndex = startIndex + i;
+        const idxInAsc = ascending.length - 1 - globalIndex; // map back to ascending index
         tdCum.textContent = formatHours(cumByIndex[String(idxInAsc)] || 0);
 
         // actions
@@ -317,6 +348,9 @@
         tr.append(tdCheck, tdDate, tdHours, tdCum, tdActions);
         tbody.appendChild(tr);
       }
+
+      // 페이지네이션 업데이트
+      updatePagination(totalPages);
     }
 
     /** @param {string} dateIso */
@@ -325,9 +359,40 @@
       return dateIso;
     }
 
+    /** @param {string} dateIso */
+    function formatDateWithWeekday(dateIso) {
+      const date = new Date(dateIso);
+      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+      const weekday = weekdays[date.getDay()];
+      return `${dateIso} (${weekday})`;
+    }
+
     /** @param {number} hours */
     function formatHours(hours) {
       return (Math.round(hours * 10) / 10).toFixed(1);
+    }
+
+    /** @param {number} totalPages */
+    function updatePagination(totalPages) {
+      if (totalPages <= 1) {
+        paginationNav.classList.add("hidden");
+        return;
+      }
+
+      paginationNav.classList.remove("hidden");
+      
+      // 페이지 정보 표시
+      const startRecord = currentPage * pageSize + 1;
+      const endRecord = Math.min((currentPage + 1) * pageSize, totalPages * pageSize);
+      pageInfo.textContent = `${startRecord}-${endRecord} / ${totalPages * pageSize}`;
+      
+      // 버튼 활성화/비활성화
+      prevPageBtn.disabled = currentPage === 0;
+      nextPageBtn.disabled = currentPage >= totalPages - 1;
+      
+      // 버튼 스타일 조정
+      prevPageBtn.classList.toggle("disabled", currentPage === 0);
+      nextPageBtn.classList.toggle("disabled", currentPage >= totalPages - 1);
     }
 
     function clearMessage() {
