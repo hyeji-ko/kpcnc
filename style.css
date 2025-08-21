@@ -100,6 +100,27 @@ body {
   font-size: 18px;
 }
 
+.grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.grid-header .card-title {
+  margin: 0;
+}
+
+.month-picker input[type="month"] {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0f1520;
+  color: var(--text);
+  font-size: 14px;
+}
+
 .hidden {
   display: none;
 }
