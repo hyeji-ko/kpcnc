@@ -16,6 +16,7 @@
     const prevPageBtn = document.getElementById("prevPageBtn");
     const nextPageBtn = document.getElementById("nextPageBtn");
     const pageInfo = document.getElementById("pageInfo");
+    const monthPicker = document.getElementById("monthPicker");
 
     // Provide robust DB fallback if db.js didn't load
     function getDB() {
@@ -73,6 +74,13 @@
     listBtn.addEventListener("click", async () => {
       showGrid();
       currentPage = 0; // 조회 시 첫 페이지로 이동
+      
+      // 현재 년월로 월 선택기 설정
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+      monthPicker.value = `${currentYear}-${currentMonth}`;
+      
       await renderGrid();
     });
     
@@ -86,6 +94,12 @@
     
     nextPageBtn.addEventListener("click", async () => {
       currentPage++;
+      await renderGrid();
+    });
+    
+    // 월 선택기 이벤트 리스너
+    monthPicker.addEventListener("change", async () => {
+      currentPage = 0; // 월 변경 시 첫 페이지로 이동
       await renderGrid();
     });
 
@@ -266,12 +280,26 @@
     async function renderGrid() {
       const records = await DB.loadRecords();
       tbody.innerHTML = "";
-      if (records.length === 0) {
+      
+      // 선택된 년월의 데이터만 필터링
+      const selectedMonth = monthPicker.value;
+      let filteredRecords = records;
+      
+      if (selectedMonth) {
+        const [year, month] = selectedMonth.split('-');
+        filteredRecords = records.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate.getFullYear() === parseInt(year) && 
+                 recordDate.getMonth() === parseInt(month) - 1;
+        });
+      }
+      
+      if (filteredRecords.length === 0) {
         const tr = document.createElement("tr");
         tr.className = "empty-row";
         const td = document.createElement("td");
         td.colSpan = 5;
-        td.textContent = "등록된 데이터가 없습니다.";
+        td.textContent = selectedMonth ? "선택한 년월에 등록된 데이터가 없습니다." : "등록된 데이터가 없습니다.";
         tr.appendChild(td);
         tbody.appendChild(tr);
         paginationNav.classList.add("hidden");
@@ -279,7 +307,7 @@
       }
 
       // Sort by date desc for display
-      const sorted = [...records].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+      const sorted = [...filteredRecords].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
       // 7일 단위로 페이지 계산
       const totalPages = Math.ceil(sorted.length / pageSize);
@@ -383,8 +411,8 @@
       
       // 페이지 정보 표시
       const startRecord = currentPage * pageSize + 1;
-      const endRecord = Math.min((currentPage + 1) * pageSize, totalPages * pageSize);
-      pageInfo.textContent = `${startRecord}-${endRecord} / ${totalPages * pageSize}`;
+      const endRecord = Math.min((currentPage + 1) * pageSize, sorted.length);
+      pageInfo.textContent = `${startRecord}-${endRecord} / ${sorted.length}`;
       
       // 버튼 활성화/비활성화
       prevPageBtn.disabled = currentPage === 0;
