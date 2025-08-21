@@ -186,5 +186,3 @@
   // Expose globally for non-module consumer scripts
   window.DB = DB;
 })();
-
-
