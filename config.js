@@ -4,7 +4,7 @@ window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyDQEmosR2YJHPQmBMgmFu5hXgQuoGr01Mw",
   authDomain: "study-4cc66.firebaseapp.com",
   projectId: "study-4cc66",
-  storageBucket: "study-4cc66.firebasestorage.app",
+  storageBucket: "study-4cc66.appspot.com",
   messagingSenderId: "663288812068",
   appId: "1:663288812068:web:d8a34f4e20ecf654f2beb1",
   measurementId: "G-CFB3X6Q57B"
