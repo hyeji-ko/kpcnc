@@ -29,45 +29,19 @@
     const monthItems = document.querySelectorAll('.month-item');
     const yearItems = document.querySelectorAll('.year-item');
 
-    // Firebase 원격 DB를 우선적으로 사용하고, 실패 시 로컬 저장소로 fallback
+    // Firebase 원격 DB만 사용
     const DB = window.DB || {
       async init() { 
-        console.log('DB 모듈이 로드되지 않았습니다. 로컬 저장소를 사용합니다.');
-        return false; 
+        console.error('DB 모듈이 로드되지 않았습니다. Firebase 설정을 확인해주세요.');
+        throw new Error('DB 모듈이 로드되지 않았습니다.');
       },
       async loadRecords() {
-        try {
-          const raw = localStorage.getItem("studyRecords");
-          if (!raw) return [];
-          const parsed = JSON.parse(raw);
-          if (!Array.isArray(parsed)) return [];
-          return parsed
-            .filter(Boolean)
-            .map((r) => ({ 
-              date: String(r.date), 
-              plan: Number(r.plan || 0),
-              planCumulative: Number(r.planCumulative || 0),
-              hours: Number(r.hours || 0), 
-              hoursCumulative: Number(r.hoursCumulative || 0),
-              percentage: Number(r.percentage || 0)
-            }))
-            .filter((r) => r.date && Number.isFinite(r.plan) && Number.isFinite(r.planCumulative) && Number.isFinite(r.hours) && Number.isFinite(r.hoursCumulative) && Number.isFinite(r.percentage));
-        } catch (e) {
-          console.warn('로컬 저장소에서 데이터 로드 실패:', e);
-          return [];
-        }
+        console.error('DB 모듈이 로드되지 않았습니다. Firebase 설정을 확인해주세요.');
+        throw new Error('DB 모듈이 로드되지 않았습니다.');
       },
       async addRecord(record) {
-        try {
-          const rows = await this.loadRecords();
-          rows.push(record);
-          localStorage.setItem("studyRecords", JSON.stringify(rows));
-          console.log('데이터가 로컬 저장소에 저장되었습니다:', record);
-          return true;
-        } catch (e) {
-          console.error('데이터 저장 실패:', e);
-          throw e;
-        }
+        console.error('DB 모듈이 로드되지 않았습니다. Firebase 설정을 확인해주세요.');
+        throw new Error('DB 모듈이 로드되지 않았습니다.');
       }
     };
 
@@ -118,9 +92,8 @@
           setUploadMessage(`${records.length}개의 레코드가 성공적으로 업로드되었습니다.`);
           uploadForm.reset();
           
-          // 조회 화면으로 이동
-          showGrid();
-          await renderGrid();
+          // 업로드 완료 후 바로 조회 화면으로 이동하고 조회 버튼 활성화
+          await showGridAndRefresh();
         } catch (error) {
           console.error('CSV 업로드 실패:', error);
           setUploadMessage(`업로드 실패: ${error.message}`, true);
@@ -267,71 +240,40 @@
       const normalizedPlan = Number.isNaN(planNumber) ? 0 : Math.round(planNumber * 10) / 10;
       const normalizedHours = Number.isNaN(hoursNumber) ? 0 : Math.round(hoursNumber * 10) / 10;
 
-      // 기존 데이터 로드하여 누적값 계산
-      const existingRecords = await DB.loadRecords();
-      const planCumulative = calculatePlanCumulative(existingRecords, normalizedPlan);
-      const hoursCumulative = calculateHoursCumulative(existingRecords, normalizedHours);
-      const percentage = planCumulative > 0 ? Math.round((hoursCumulative / planCumulative) * 1000) / 10 : 0;
+      try {
+        // 기존 데이터 로드하여 누적값 계산
+        const existingRecords = await DB.loadRecords();
+        const planCumulative = calculatePlanCumulative(existingRecords, normalizedPlan);
+        const hoursCumulative = calculateHoursCumulative(existingRecords, normalizedHours);
+        const percentage = planCumulative > 0 ? Math.round((hoursCumulative / planCumulative) * 1000) / 10 : 0;
 
-      const record = {
-        date: dateValue,
-        plan: normalizedPlan,
-        planCumulative: planCumulative,
-        hours: normalizedHours,
-        hoursCumulative: hoursCumulative,
-        percentage: percentage
-      };
+        const record = {
+          date: dateValue,
+          plan: normalizedPlan,
+          planCumulative: planCumulative,
+          hours: normalizedHours,
+          hoursCumulative: hoursCumulative,
+          percentage: percentage
+        };
 
-      await DB.addRecord(record);
-      studyForm.reset();
-      setMessage("저장되었습니다.");
-      // Show list after save
-      showGrid();
-      await renderGrid();
+        await DB.addRecord(record);
+        studyForm.reset();
+        setMessage("저장되었습니다.");
+        
+        // 등록 완료 후 조회 화면으로 이동하고 조회 버튼 활성화
+        await showGridAndRefresh();
+      } catch (error) {
+        console.error('데이터 저장 실패:', error);
+        setMessage(`저장 실패: ${error.message}`, true);
+      }
     });
 
     // Row interactions: checkbox toggle, edit, delete
     tbody.addEventListener("change", async (e) => {
       const target = e.target;
       if (target && target.matches('input.row-check')) {
-        const id = target.getAttribute('data-id');
-        if (id) {
-          if (target.checked) {
-            selectedIds.add(id);
-            const tr = target.closest('tr');
-            if (tr) {
-              tr.setAttribute('data-selected', 'true');
-            }
-          } else {
-            selectedIds.delete(id);
-            const tr = target.closest('tr');
-            if (tr) {
-              tr.removeAttribute('data-selected');
-            }
-          }
-          // Toggle actions inline for faster UX without full re-render
-          const tr = target.closest('tr');
-          if (tr) {
-            const actionsTd = tr.querySelector('td.actions-cell');
-            if (actionsTd) {
-              actionsTd.innerHTML = '';
-              if (target.checked) {
-                const editBtn = document.createElement('button');
-                editBtn.type = 'button';
-                editBtn.className = 'btn edit-btn';
-                editBtn.textContent = '수정';
-                editBtn.setAttribute('data-id', String(id));
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'btn delete-btn';
-                delBtn.textContent = '삭제';
-                delBtn.style.marginLeft = '6px';
-                delBtn.setAttribute('data-id', String(id));
-                actionsTd.append(editBtn, delBtn);
-              }
-            }
-          }
-        }
+        // 이벤트는 renderGrid에서 개별 체크박스에 추가되므로 여기서는 처리하지 않음
+        return;
       }
     });
 
@@ -421,33 +363,53 @@
     }
 
     function showForm() {
+      // 모든 섹션 숨기기
       formSection.classList.remove("hidden");
       gridSection.classList.add("hidden");
       uploadSection.classList.add("hidden");
       
-      // 업로드 관련 상태 클리어
+      // 업로드 관련 상태 완전 클리어
       clearUploadMessage();
       uploadForm.reset();
       csvFileInput.value = '';
+      
+      // 선택된 행 초기화
+      selectedIds.clear();
+      
+      // 등록 버튼 활성화
+      clearActiveButtons();
+      registerBtn.classList.add('active');
     }
 
     function showGrid() {
+      // 모든 섹션 숨기기
       gridSection.classList.remove("hidden");
       formSection.classList.add("hidden");
       uploadSection.classList.add("hidden");
       
-      // 업로드 관련 상태 클리어
+      // 업로드 관련 상태 완전 클리어
       clearUploadMessage();
       uploadForm.reset();
       csvFileInput.value = '';
+      
+      // 등록 폼 메시지 클리어
+      clearMessage();
+      
+      // 조회 버튼 활성화
+      clearActiveButtons();
+      listBtn.classList.add('active');
     }
 
     function showUpload() {
+      // 모든 섹션 숨기기
       uploadSection.classList.remove("hidden");
       formSection.classList.add("hidden");
       gridSection.classList.add("hidden");
       
-      // 다른 버튼들의 active 상태 제거하고 업로드 버튼만 활성화
+      // 등록 폼 메시지 클리어
+      clearMessage();
+      
+      // 업로드 버튼 활성화
       clearActiveButtons();
       uploadBtn.classList.add('active');
     }
@@ -667,6 +629,22 @@
           tr.setAttribute('data-selected', 'true');
         }
         
+        // 체크박스 변경 이벤트 리스너 추가
+        cb.addEventListener('change', (e) => {
+          const id = e.target.getAttribute('data-id');
+          if (id) {
+            if (e.target.checked) {
+              selectedIds.add(id);
+              tr.setAttribute('data-selected', 'true');
+            } else {
+              selectedIds.delete(id);
+              tr.removeAttribute('data-selected');
+            }
+            // 액션 버튼 토글
+            toggleActionButtons(tr, e.target.checked, id);
+          }
+        });
+        
         tdCheck.appendChild(cb);
 
         // date with weekday
@@ -698,20 +676,8 @@
         tdActions.className = 'actions-cell';
         const isSelected = rec.id ? selectedIds.has(String(rec.id)) : false;
         if (isSelected) {
-          const editBtn = document.createElement('button');
-          editBtn.type = 'button';
-          editBtn.className = 'btn edit-btn';
-          editBtn.textContent = '수정';
-          editBtn.setAttribute('data-id', String(rec.id));
-          const delBtn = document.createElement('button');
-          delBtn.type = 'button';
-          delBtn.className = 'btn delete-btn';
-          delBtn.textContent = '삭제';
-          delBtn.style.marginLeft = '6px';
-          delBtn.setAttribute('data-id', String(rec.id));
-          tdActions.append(editBtn, delBtn);
+          toggleActionButtons(tr, true, String(rec.id));
         }
-
         tr.append(tdCheck, tdDate, tdPlan, tdPlanCum, tdHours, tdHoursCum, tdPercentage, tdActions);
         tbody.appendChild(tr);
       }
@@ -802,6 +768,52 @@
     function setUploadMessage(msg, isError = false) {
       uploadMessage.textContent = msg;
       uploadMessage.classList.toggle("error", Boolean(isError));
+    }
+
+    async function showGridAndRefresh() {
+      // 조회 화면으로 이동
+      showGrid();
+      
+      // 데이터 새로고침
+      await renderGrid();
+      
+      // 조회 버튼 활성화 (showGrid에서 이미 처리되지만 확실히 하기 위해)
+      clearActiveButtons();
+      listBtn.classList.add('active');
+      
+      // 성공 메시지 표시 (잠시 후 사라짐)
+      setTimeout(() => {
+        clearUploadMessage();
+      }, 3000);
+    }
+
+    /**
+     * 액션 버튼을 토글하는 함수
+     * @param {HTMLElement} tr - 테이블 행 요소
+     * @param {boolean} isChecked - 체크박스 선택 상태
+     * @param {string} id - 레코드 ID
+     */
+    function toggleActionButtons(tr, isChecked, id) {
+      const actionsTd = tr.querySelector('td.actions-cell');
+      if (actionsTd) {
+        actionsTd.innerHTML = '';
+        if (isChecked) {
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'btn edit-btn';
+          editBtn.textContent = '수정';
+          editBtn.setAttribute('data-id', String(id));
+          
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'btn delete-btn';
+          delBtn.textContent = '삭제';
+          delBtn.style.marginLeft = '6px';
+          delBtn.setAttribute('data-id', String(id));
+          
+          actionsTd.append(editBtn, delBtn);
+        }
+      }
     }
   });
 })();
