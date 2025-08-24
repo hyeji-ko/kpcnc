@@ -594,7 +594,7 @@
             console.log('Firebase 초기화 성공');
           } catch (initError) {
             console.warn('Firebase 초기화 실패:', initError);
-            showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
+            //showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
           }
         }
         
@@ -604,7 +604,7 @@
         // DB 상태 표시 - 실제 데이터 작업으로 확인
         if (DB.isRemote) {
           console.log('✅ Firebase 원격 DB 사용 중');
-          showStatusMessage('Firebase 원격 DB에 연결되었습니다.', 'success');
+          //showStatusMessage('Firebase 원격 DB에 연결되었습니다.', 'success');
           
           // 실제 데이터 작업으로 연결 상태 재확인
           try {
@@ -625,17 +625,21 @@
           }
         } else {
           console.log('⚠️ 로컬 스토리지 사용 중');
-          showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
+          //showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
           
           // 로컬 스토리지 사용 시 추가 안내
+          /*
           setTimeout(() => {
-            showStatusMessage('현재 로컬 스토리지 사용 중 - 데이터는 이 브라우저에만 저장됩니다.', 'info');
+            //showStatusMessage('현재 로컬 스토리지 사용 중 - 데이터는 이 브라우저에만 저장됩니다.', 'info');
           }, 3000);
+          */
           
           // Firebase 설정 안내
+          /*
           setTimeout(() => {
             showStatusMessage('Firebase 설정: firebase-setup-guide.md 파일을 참조하세요', 'info');
           }, 6000);
+          */
         }
       }
     } catch (e) {
@@ -658,7 +662,7 @@ Firebase 초기화에 실패했습니다.
       
       // 에러가 발생해도 앱은 계속 실행되도록 함
       console.warn('Firebase 초기화 실패로 인해 앱이 제한된 기능으로 실행됩니다.');
-      showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
+      //showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
     }
 
     // Init view: show grid by default
