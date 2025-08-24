@@ -6,8 +6,7 @@ window.FIREBASE_CONFIG = {
   projectId: "study-4cc66",
   storageBucket: "study-4cc66.appspot.com",
   messagingSenderId: "663288812068",
-  appId: "1:663288812068:web:d8a34f4e20ecf654f2beb1",
-  measurementId: "G-CFB3X6Q57B"
+  appId: "1:663288812068:web:d8a34f4e20ecf654f2beb1"
 };
 // Back-compat alias if needed
 window.firebaseConfig = window.FIREBASE_CONFIG;
