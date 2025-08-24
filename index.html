@@ -6,9 +6,37 @@
     <title>학습시간 관리</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>" />
     <link rel="stylesheet" href="style.css" />
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    
+    <!-- Firebase 초기화 및 설정 -->
     <script src="config.js"></script>
+    
+    <!-- Firebase 초기화 실행 -->
+    <script>
+      // Firebase SDK 로드 완료 후 초기화
+      document.addEventListener('DOMContentLoaded', async function() {
+        try {
+          // Firebase 초기화 시도
+          const initialized = await window.initializeFirebase();
+          if (initialized) {
+            console.log('✅ Firebase 초기화 성공');
+          } else {
+            console.warn('⚠️ Firebase 초기화 실패, 로컬 스토리지 사용');
+          }
+        } catch (error) {
+          console.error('Firebase 초기화 중 오류:', error);
+        }
+      });
+    </script>
+    
+    <!-- 데이터베이스 모듈 -->
     <script src="db.js"></script>
-    <script defer src="script.js"></script>
+    
+    <!-- 메인 애플리케이션 -->
+    <script src="script.js"></script>
   </head>
   <body>
     <header class="app-header">
