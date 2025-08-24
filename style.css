@@ -596,3 +596,45 @@ table.data-table tbody tr[data-selected="true"]:hover td {
   margin-top: 16px !important;
 }
 
+/* 편집 가능한 input 요소 스타일 */
+.plan-input, .hours-input {
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.plan-input:disabled, .hours-input:disabled {
+  background-color: #f3f4f6 !important;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.plan-input.editable-input, .hours-input.editable-input {
+  background-color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  color: #1f2937;
+  cursor: text;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.plan-input.editable-input:focus, .hours-input.editable-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* 체크박스 선택된 행 스타일 */
+.data-table tbody tr[data-selected="true"] {
+  background-color: #1e40af !important;
+  color: #ffffff !important;
+}
+
+.data-table tbody tr[data-selected="true"] td {
+  color: #ffffff !important;
+}
+
+.data-table tbody tr[data-selected="true"] .plan-input,
+.data-table tbody tr[data-selected="true"] .hours-input {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #ffffff !important;
+}
+
