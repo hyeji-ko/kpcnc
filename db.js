@@ -219,12 +219,78 @@ const DB = {
       this.impl = localImpl;
       console.log('로컬 스토리지 DB 초기화 완료');
       
+      // 사용자에게 Firebase 설정 안내
+      this.showFirebaseSetupHelp();
+      
     } catch (e) {
       console.error('DB 초기화 실패:', e);
       // 최종 폴백으로 로컬 스토리지 사용
       this.impl = localImpl;
       console.log('로컬 스토리지로 폴백하여 DB 초기화 완료');
+      
+      // 사용자에게 Firebase 설정 안내
+      this.showFirebaseSetupHelp();
     }
+  },
+  
+  // Firebase 설정 도움말 표시
+  showFirebaseSetupHelp() {
+    const helpDiv = document.createElement('div');
+    helpDiv.id = 'firebase-help';
+    helpDiv.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 2px solid #f59e0b;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 500px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-family: Arial, sans-serif;
+      ">
+        <h3 style="margin: 0 0 16px 0; color: #f59e0b;">⚠️ Firebase 연결 실패</h3>
+        <p style="margin: 0 0 16px 0; line-height: 1.5;">
+          현재 로컬 스토리지를 사용하고 있습니다. Firebase 원격 DB를 사용하려면 다음 설정이 필요합니다:
+        </p>
+        <ol style="margin: 0 0 16px 0; padding-left: 20px; line-height: 1.5;">
+          <li>Firebase Console에서 Authentication 서비스 활성화</li>
+          <li>익명 인증 방법 활성화</li>
+          <li>도메인 설정 확인</li>
+        </ol>
+        <p style="margin: 0 0 16px 0; line-height: 1.5;">
+          <strong>현재 앱은 정상 작동합니다.</strong> 데이터는 브라우저에 저장됩니다.
+        </p>
+        <div style="text-align: center;">
+          <button onclick="document.getElementById('firebase-help').remove()" style="
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+          ">확인</button>
+        </div>
+      </div>
+    `;
+    
+    // 기존 도움말 제거
+    const existingHelp = document.getElementById('firebase-help');
+    if (existingHelp) {
+      existingHelp.remove();
+    }
+    
+    document.body.appendChild(helpDiv);
+    
+    // 10초 후 자동 제거
+    setTimeout(() => {
+      if (helpDiv.parentNode) {
+        helpDiv.remove();
+      }
+    }, 10000);
   },
   
   async loadRecords() {
