@@ -21,57 +21,58 @@ window.initializeFirebase = async function() {
   try {
     console.log('Firebase 초기화 시작...');
     
-    // Firebase가 이미 로드되었는지 확인
-    if (typeof firebase === 'undefined') {
-      console.error('Firebase SDK가 로드되지 않았습니다.');
-      window.FIREBASE_ERROR = 'Firebase SDK 로드 실패';
-      return false;
-    }
-
+    // 모바일 환경 감지
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('모바일 환경 감지:', isMobile);
+    
     // Firebase 앱 초기화
     if (!firebase.apps.length) {
       firebase.initializeApp(window.FIREBASE_CONFIG);
       console.log('Firebase 앱 초기화 완료');
     }
-
-    // Firestore 인스턴스 가져오기
-    const db = firebase.firestore();
     
-    // Firestore 설정 - WebChannel 오류 완전 방지
+    // Firestore 초기화
     if (!window.FIRESTORE_CONFIGURED) {
+      const db = firebase.firestore();
+      
+      // 모바일 환경에 최적화된 설정
       const settings = {
         cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
         experimentalForceLongPolling: true,
         useFetchStreams: false,
         ignoreUndefinedProperties: true
-        // ssl과 experimentalAutoDetectLongPolling 옵션 제거 (Firebase 9.23.0에서 지원하지 않음)
       };
+      
+      // 모바일에서는 추가 설정
+      if (isMobile) {
+        settings.experimentalForceLongPolling = true;
+        settings.useFetchStreams = false;
+        console.log('모바일 전용 Firestore 설정 적용');
+      }
       
       db.settings(settings);
       window.FIRESTORE_CONFIGURED = true;
-      console.log('Firestore 설정 적용됨:', settings);
-    } else {
-      console.log('Firestore 설정이 이미 적용되어 있습니다.');
+      console.log('Firestore 설정 완료:', settings);
     }
     
-    // 연결 테스트 (설정 후에만)
+    // 익명 인증
     try {
-      await db.collection('_test').limit(1).get();
-      console.log('Firestore 연결 테스트 성공');
-    } catch (testError) {
-      console.warn('Firestore 연결 테스트 실패 (정상적일 수 있음):', testError.message);
+      await firebase.auth().signInAnonymously();
+      console.log('Firebase 익명 인증 성공');
+      window.FIREBASE_INITIALIZED = true;
+      window.FIREBASE_ERROR = null;
+    } catch (authError) {
+      console.error('Firebase 익명 인증 실패:', authError);
+      window.FIREBASE_ERROR = authError;
+      throw authError;
     }
     
-    window.FIREBASE_INITIALIZED = true;
-    window.FIREBASE_ERROR = null;
-    console.log('✅ Firebase 초기화 완료');
+    console.log('Firebase 초기화 완료');
     return true;
-    
   } catch (error) {
     console.error('Firebase 초기화 실패:', error);
-    window.FIREBASE_INITIALIZED = false;
-    window.FIREBASE_ERROR = error.message;
-    return false;
+    window.FIREBASE_ERROR = error;
+    throw error;
   }
 };
 
