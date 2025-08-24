@@ -21,10 +21,6 @@ window.initializeFirebase = async function() {
   try {
     console.log('Firebase 초기화 시작...');
     
-    // 모바일 환경 감지
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    console.log('모바일 환경 감지:', isMobile);
-    
     // Firebase 앱 초기화
     if (!firebase.apps.length) {
       firebase.initializeApp(window.FIREBASE_CONFIG);
@@ -35,20 +31,13 @@ window.initializeFirebase = async function() {
     if (!window.FIRESTORE_CONFIGURED) {
       const db = firebase.firestore();
       
-      // 모바일 환경에 최적화된 설정
+      // 안정적인 설정
       const settings = {
         cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
         experimentalForceLongPolling: true,
         useFetchStreams: false,
         ignoreUndefinedProperties: true
       };
-      
-      // 모바일에서는 추가 설정
-      if (isMobile) {
-        settings.experimentalForceLongPolling = true;
-        settings.useFetchStreams = false;
-        console.log('모바일 전용 Firestore 설정 적용');
-      }
       
       db.settings(settings);
       window.FIRESTORE_CONFIGURED = true;
