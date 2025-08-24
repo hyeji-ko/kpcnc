@@ -1529,13 +1529,16 @@ Firebase 초기화에 실패했습니다.
         const filename = document.getElementById('downloadFilename').value.trim() || '학습시간_데이터';
         
                  // 형식별 다운로드 처리
-         switch (format) {
-           case 'csv':
-             await downloadCSV(sortedRecords, filename);
-             break;
-           default:
-             throw new Error('지원하지 않는 파일 형식입니다.');
-         }
+        switch (format) {
+          case 'pdf':
+            await downloadPDF(sortedRecords, filename);
+            break;
+          case 'csv':
+            await downloadCSV(sortedRecords, filename);
+            break;
+          default:
+            throw new Error('지원하지 않는 파일 형식입니다.');
+        }
         
         progressModal.remove();
         showDownloadMessage(`${format.toUpperCase()} 파일 다운로드가 완료되었습니다.`);
@@ -1563,6 +1566,126 @@ Firebase 초기화에 실패했습니다.
       
       const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
       downloadBlob(blob, `${filename}.csv`);
+    }
+
+    // PDF 다운로드
+    async function downloadPDF(records, filename) {
+      try {
+        // jsPDF 라이브러리 확인
+        if (typeof jsPDF === 'undefined') {
+          throw new Error('jsPDF 라이브러리가 로드되지 않았습니다.');
+        }
+
+        // PDF 문서 생성
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        // Noto Sans KR 폰트 로드 시도
+        let fontLoaded = false;
+        try {
+          const fontUrls = [
+            'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.woff2',
+            'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.woff',
+            'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.ttf'
+          ];
+          
+          for (const fontUrl of fontUrls) {
+            try {
+              const response = await fetch(fontUrl);
+              if (response.ok) {
+                const fontArrayBuffer = await response.arrayBuffer();
+                doc.addFont(fontArrayBuffer, 'NotoSansKR', 'normal');
+                fontLoaded = true;
+                break;
+              }
+            } catch (error) {
+              console.warn(`폰트 로드 실패 (${fontUrl}):`, error);
+              continue;
+            }
+          }
+        } catch (error) {
+          console.warn('Noto Sans KR 폰트 로드 실패, 기본 폰트 사용:', error);
+        }
+
+        // 폰트 설정
+        if (fontLoaded) {
+          doc.setFont('NotoSansKR');
+        } else {
+          doc.setFont('helvetica');
+        }
+
+        // 제목 설정
+        const title = '학습시간 데이터';
+        const titleFontSize = 18;
+        doc.setFontSize(titleFontSize);
+        doc.setTextColor(0, 0, 0);
+        
+        // 제목 중앙 정렬
+        const pageWidth = doc.internal.pageSize.width;
+        const titleWidth = doc.getTextWidth(title);
+        const titleX = (pageWidth - titleWidth) / 2;
+        doc.text(title, titleX, 25);
+
+        // 헤더 설정
+        const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+        const headerFontSize = 12;
+        doc.setFontSize(headerFontSize);
+        
+        // 테이블 시작 위치
+        let yPosition = 40;
+        const colWidths = [30, 25, 25, 25, 25, 20];
+        const startX = 20;
+        
+        // 헤더 그리기
+        doc.setFillColor(245, 245, 245);
+        doc.rect(startX, yPosition - 8, pageWidth - 40, 10, 'F');
+        doc.setTextColor(0, 0, 0);
+        
+        let currentX = startX;
+        headers.forEach((header, index) => {
+          doc.text(header, currentX + 2, yPosition);
+          currentX += colWidths[index];
+        });
+        
+        yPosition += 15;
+
+        // 데이터 행 그리기
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        
+        records.forEach((record, index) => {
+          // 페이지 나누기 확인
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 40;
+          }
+          
+          const rowData = [
+            record.date || '',
+            (record.plan || 0).toString(),
+            (record.hours || 0).toString(),
+            (record.planCumulative || 0).toString(),
+            (record.hoursCumulative || 0).toString(),
+            (record.percentage || 0).toString() + '%'
+          ];
+          
+          currentX = startX;
+          rowData.forEach((cellData, cellIndex) => {
+            if (cellData !== null && cellData !== undefined) {
+              doc.text(cellData, currentX + 2, yPosition);
+            }
+            currentX += colWidths[cellIndex];
+          });
+          
+          yPosition += 8;
+        });
+
+        // PDF 파일 다운로드
+        doc.save(`${filename}.pdf`);
+        
+      } catch (error) {
+        console.error('PDF 생성 실패:', error);
+        throw new Error(`PDF 생성 실패: ${error.message}`);
+      }
     }
 
     
