@@ -378,7 +378,7 @@
           
           // Firebase 초기화 대기
           let attempts = 0;
-          const maxAttempts = 20; // 최대 10초 대기
+          const maxAttempts = 30; // 최대 15초 대기
           
           while (!firebaseStatus.initialized && attempts < maxAttempts) {
             console.log(`Firebase 초기화 대기 중... (${attempts + 1}/${maxAttempts})`);
@@ -390,8 +390,11 @@
           }
           
           if (!firebaseStatus.initialized) {
-            console.warn('Firebase 초기화 시간 초과 (10초)');
+            console.warn('Firebase 초기화 시간 초과 (15초)');
             console.log('Firebase 상태:', window.checkFirebaseStatus());
+            
+            // Firebase 초기화 실패 시 사용자에게 알림
+            showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
           }
         }
         
