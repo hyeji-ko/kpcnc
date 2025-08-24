@@ -314,61 +314,91 @@ input[type="text"] {
 }
 
 /* Table styles */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  font-size: 0.9rem;
+/* 테이블 전체 스타일 강화 */
+.data-table,
+table.data-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin-top: 1rem !important;
+  font-size: 0.9rem !important;
 }
 
+/* 테이블 헤더 스타일 */
 .data-table th,
-.data-table td {
-  padding: 0.75rem 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+table.data-table th {
+  background-color: #f9fafb !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  padding: 0.75rem 0.5rem !important;
+  text-align: left !important;
+  border-bottom: 1px solid #e5e7eb !important;
 }
 
-.data-table th {
-  background-color: #f9fafb;
-  font-weight: 600;
-  color: #374151;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+/* 테이블 셀 기본 스타일 */
+.data-table td,
+table.data-table td {
+  padding: 0.75rem 0.5rem !important;
+  text-align: left !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  color: inherit !important;
 }
 
-.data-table tbody tr:hover {
+/* 테이블 행 기본 스타일 */
+.data-table tbody tr,
+table.data-table tbody tr {
+  background-color: transparent !important;
+  color: var(--text) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* 테이블 행 호버 스타일 - 강력한 우선순위로 적용 */
+.data-table tbody tr:hover,
+table.data-table tbody tr:hover {
   background-color: #374151 !important; /* 어두운 회색 배경 */
   color: #ffffff !important; /* 흰색 텍스트 */
 }
 
-.data-table tbody tr:hover td {
+.data-table tbody tr:hover td,
+table.data-table tbody tr:hover td,
+.data-table tbody tr:hover th,
+table.data-table tbody tr:hover th {
   color: #ffffff !important; /* 호버 시 모든 셀의 텍스트를 흰색으로 */
   border-color: #6b7280 !important; /* 호버 시 테두리 색상도 조정 */
 }
 
 /* 선택된 행 스타일 - 가독성 개선 */
 .data-table tbody tr.selected,
-.data-table tbody tr[data-selected="true"] {
+.data-table tbody tr[data-selected="true"],
+table.data-table tbody tr.selected,
+table.data-table tbody tr[data-selected="true"] {
   background-color: #1e3a8a !important; /* 진한 파란색 배경 */
   color: #ffffff !important; /* 흰색 텍스트 */
   border: 2px solid #3b82f6 !important; /* 파란색 테두리 */
 }
 
 .data-table tbody tr.selected td,
-.data-table tbody tr[data-selected="true"] td {
+.data-table tbody tr[data-selected="true"] td,
+table.data-table tbody tr.selected td,
+table.data-table tbody tr[data-selected="true"] td {
   color: #ffffff !important; /* 모든 셀의 텍스트를 흰색으로 */
   border-color: #3b82f6 !important; /* 테두리 색상도 강조 */
 }
 
 .data-table tbody tr.selected:hover,
-.data-table tbody tr[data-selected="true"]:hover {
+.data-table tbody tr[data-selected="true"]:hover,
+table.data-table tbody tr.selected:hover,
+table.data-table tbody tr[data-selected="true"]:hover {
   background-color: #1e40af !important; /* 호버 시 더 진한 파란색 */
   color: #ffffff !important; /* 흰색 텍스트 유지 */
 }
 
 .data-table tbody tr.selected:hover td,
-.data-table tbody tr[data-selected="true"]:hover td {
+.data-table tbody tr[data-selected="true"]:hover td,
+table.data-table tbody tr.selected:hover td,
+table.data-table tbody tr[data-selected="true"]:hover td {
   color: #ffffff !important; /* 호버 시에도 흰색 텍스트 유지 */
   border-color: #3b82f6 !important; /* 파란색 테두리 유지 */
 }
@@ -504,5 +534,63 @@ input[type="text"] {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 진행상황 모달 스타일 */
+.progress-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-modal .modal-content {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  text-align: center;
+  min-width: 320px;
+}
+
+.progress-modal h2 {
+  margin: 0 0 16px 0;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.progress-modal p {
+  margin: 8px 0;
+  color: var(--muted);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--border);
+  border-radius: 4px;
+  margin: 16px 0;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--primary);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.progress-status {
+  font-weight: 600;
+  color: var(--text) !important;
+  margin-top: 16px !important;
 }
 
