@@ -624,7 +624,7 @@
             }
           }
         } else {
-          console.log('⚠️ 로컬 스토리지 사용 중');
+          //console.log('⚠️ 로컬 스토리지 사용 중');
           //showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
           
           // 로컬 스토리지 사용 시 추가 안내
@@ -1571,5 +1571,6 @@ function updateProgress(modal, current, total, statusText) {
     progressPercentage.textContent = `(${percentage.toFixed(0)}%)`;
   }
 }
+
 
 
