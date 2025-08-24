@@ -71,155 +71,129 @@ let remoteInitAttempted = false;
 
 async function getRemoteImpl() {
   try {
-    console.log('Firebase 원격 DB 연결 시도...');
-    
-    // Firebase 상태 확인
-    const status = window.checkFirebaseStatus();
-    console.log('Firebase 상태:', status);
-    
-    if (!status.initialized) {
-      console.warn('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
+    // Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...
+    if (!window.FIREBASE_INITIALIZED) {
+      console.log('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
       
-      // Firebase 초기화 시도
-      const initialized = await window.initializeFirebase();
-      if (!initialized) {
-        throw new Error(`Firebase 초기화 실패: ${status.error || '알 수 없는 오류'}`);
-      }
+      // 모바일 환경 감지
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log('모바일 환경 감지:', isMobile);
       
-      // 초기화 후 상태 재확인
-      const newStatus = window.checkFirebaseStatus();
-      if (!newStatus.initialized) {
-        throw new Error('Firebase 초기화 후에도 상태가 업데이트되지 않았습니다.');
+      try {
+        await window.initializeFirebase();
+        console.log('Firebase 초기화 성공');
+      } catch (initError) {
+        console.error('Firebase 초기화 실패:', initError);
+        
+        // 모바일에서는 더 자세한 오류 정보 제공
+        if (isMobile) {
+          console.error('모바일 Firebase 초기화 실패 상세:', {
+            error: initError,
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            cookieEnabled: navigator.cookieEnabled,
+            onLine: navigator.onLine
+          });
+        }
+        
+        return null;
       }
     }
     
-    // Firebase 앱 인스턴스 확인
-    if (!firebase.apps.length) {
-      console.error('Firebase 앱이 초기화되지 않았습니다.');
-      throw new Error('Firebase 앱이 초기화되지 않았습니다.');
+    if (!window.FIREBASE_INITIALIZED) {
+      console.error('Firebase 초기화 실패');
+      return null;
     }
-    
-    console.log('Firebase 앱 확인됨:', firebase.apps[0].name);
     
     // Firestore 인스턴스 가져오기
     const db = firebase.firestore();
-    console.log('Firestore 인스턴스 생성됨');
     
-    // Firestore 설정은 이미 config.js에서 적용됨
-    if (!window.FIRESTORE_CONFIGURED) {
-      console.warn('Firestore 설정이 아직 적용되지 않았습니다. config.js에서 설정을 확인하세요.');
-    } else {
-      console.log('Firestore 설정이 이미 적용되어 있습니다.');
-    }
-    
-    // 연결 상태 확인
-    try {
-      const connectionTest = await window.testFirebaseConnection();
-      if (!connectionTest.success) {
-        console.warn('Firebase 연결 테스트 실패:', connectionTest.error);
-      } else {
-        console.log('Firebase 연결 테스트 성공');
-      }
-    } catch (testError) {
-      console.warn('연결 테스트 중 오류:', testError.message);
-    }
-    
-    // 익명 인증 시도
-    console.log('익명 인증 시도...');
-    const auth = firebase.auth();
-    
-    // 인증 상태 확인
-    let user = auth.currentUser;
-    if (!user) {
-      console.log('새로운 익명 인증 시도...');
-      const userCredential = await auth.signInAnonymously();
-      user = userCredential.user;
-    }
-    
-    console.log('익명 인증 성공:', user.uid);
-    
-    // 사용자별 컬렉션 경로 설정
-    const userId = user.uid;
-    const recordsCollection = db.collection('users').doc(userId).collection('records');
-    
-    console.log('Firestore 컬렉션 경로 설정됨:', `users/${userId}/records`);
-    
-    // 컬렉션 연결 테스트 (더 안전한 방법)
-    try {
-      const testSnapshot = await recordsCollection.limit(1).get();
-      console.log('Firestore 컬렉션 연결 테스트 성공');
-    } catch (testError) {
-      console.warn('컬렉션 연결 테스트 실패 (정상적일 수 있음):', testError.message);
-      
-      // 오류가 심각한 경우 로컬 스토리지로 폴백
-      if (testError.code === 'permission-denied' || testError.code === 'unavailable') {
-        throw new Error(`Firestore 접근 권한 없음: ${testError.message}`);
+    // 모바일 환경에서 연결 테스트
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      try {
+        // 모바일에서는 간단한 연결 테스트만 수행
+        await db.collection('_test').limit(1).get();
+        console.log('모바일 Firestore 연결 테스트 성공');
+      } catch (testError) {
+        console.warn('모바일 Firestore 연결 테스트 실패:', testError.message);
+        // 모바일에서는 연결 테스트 실패해도 계속 진행
       }
     }
     
     return {
-      async loadRecords() {
-        try {
-          console.log('Firestore에서 레코드 로드 시도...');
-          const snapshot = await recordsCollection.orderBy('date', 'desc').get();
-          const records = [];
-          snapshot.forEach(doc => {
-            records.push({
-              id: doc.id,
-              ...doc.data()
-            });
-          });
-          console.log(`${records.length}개의 레코드를 Firestore에서 로드했습니다.`);
-          return records;
-        } catch (error) {
-          console.error('Firestore 레코드 로드 실패:', error);
-          throw new Error(`Firestore 데이터 로드 실패: ${error.message}`);
-        }
-      },
-      
       async addRecord(record) {
         try {
-          console.log('Firestore에 레코드 추가 시도...');
-          const docRef = await recordsCollection.add(record);
-          console.log('Firestore에 레코드 추가 성공:', docRef.id);
+          const docRef = await db.collection('users').doc('anonymous').collection('records').add(record);
+          console.log('Firebase에 레코드 추가 성공:', docRef.id);
           return docRef.id;
         } catch (error) {
-          console.error('Firestore 레코드 추가 실패:', error);
-          throw new Error(`Firestore 데이터 추가 실패: ${error.message}`);
+          console.error('Firebase 레코드 추가 실패:', error);
+          throw error;
         }
       },
       
-      async updateRecord(id, patch) {
+      async loadRecords() {
         try {
-          console.log('Firestore 레코드 업데이트 시도...');
-          await recordsCollection.doc(id).update(patch);
-          console.log('Firestore 레코드 업데이트 성공:', id);
+          const snapshot = await db.collection('users').doc('anonymous').collection('records').get();
+          const records = [];
+          snapshot.forEach(doc => {
+            records.push({ id: doc.id, ...doc.data() });
+          });
+          console.log('Firebase에서 레코드 로드 성공:', records.length);
+          return records;
         } catch (error) {
-          console.error('Firestore 레코드 업데이트 실패:', error);
-          throw new Error(`Firestore 데이터 업데이트 실패: ${error.message}`);
+          console.error('Firebase 레코드 로드 실패:', error);
+          throw error;
+        }
+      },
+      
+      async updateRecord(id, updates) {
+        try {
+          await db.collection('users').doc('anonymous').collection('records').doc(id).update(updates);
+          console.log('Firebase 레코드 업데이트 성공:', id);
+        } catch (error) {
+          console.error('Firebase 레코드 업데이트 실패:', error);
+          throw error;
         }
       },
       
       async deleteRecord(id) {
         try {
-          console.log('Firestore 레코드 삭제 시도...');
-          await recordsCollection.doc(id).delete();
-          console.log('Firestore 레코드 삭제 성공:', id);
+          await db.collection('users').doc('anonymous').collection('records').doc(id).delete();
+          console.log('Firebase 레코드 삭제 성공:', id);
         } catch (error) {
-          console.error('Firestore 레코드 삭제 실패:', error);
-          throw new Error(`Firestore 데이터 삭제 실패: ${error.message}`);
+          console.error('Firebase 레코드 삭제 실패:', error);
+          throw error;
         }
-      },
-      
-      get isRemote() { return true; }
+      }
     };
+  } catch (error) {
+    console.error('Firebase 원격 DB 연결 실패:', error);
     
-  } catch (e) {
-    console.error('Firebase 원격 DB 연결 실패:', e);
-    console.error('에러 코드:', e.code);
-    console.error('에러 메시지:', e.message);
-    console.warn('Firebase 원격 DB 연결 실패로 로컬 스토리지를 사용합니다.');
-    return null; // Fallback to local storage
+    // 모바일 환경 감지
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const deviceType = isMobile ? '모바일' : 'PC';
+    
+    console.error('에러 코드:', error.code);
+    console.error('에러 메시지:', error.message);
+    
+    if (isMobile) {
+      console.error('모바일 Firebase 연결 실패 상세 정보:', {
+        error: error,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        cookieEnabled: navigator.cookieEnabled,
+        onLine: navigator.onLine,
+        connection: navigator.connection ? {
+          effectiveType: navigator.connection.effectiveType,
+          downlink: navigator.connection.downlink,
+          rtt: navigator.connection.rtt
+        } : 'Not supported'
+      });
+    }
+    
+    return null;
   }
 }
 
