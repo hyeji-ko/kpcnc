@@ -90,6 +90,44 @@
       });
     });
 
+    // CSV 파일 선택 시 자동 업로드 처리
+    csvFileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        try {
+          clearUploadMessage();
+          setUploadMessage("파일을 처리 중입니다...");
+          
+          const text = await file.text();
+          const records = parseCSV(text);
+          
+          if (records.length === 0) {
+            setUploadMessage("유효한 데이터가 없습니다.", true);
+            return;
+          }
+
+          // 기존 데이터와 병합하여 누적값 계산
+          const existingRecords = await DB.loadRecords();
+          const mergedRecords = mergeAndCalculateCumulative(existingRecords, records);
+          
+          // DB에 저장
+          for (const record of mergedRecords) {
+            await DB.addRecord(record);
+          }
+
+          setUploadMessage(`${records.length}개의 레코드가 성공적으로 업로드되었습니다.`);
+          uploadForm.reset();
+          
+          // 조회 화면으로 이동
+          showGrid();
+          await renderGrid();
+        } catch (error) {
+          console.error('CSV 업로드 실패:', error);
+          setUploadMessage(`업로드 실패: ${error.message}`, true);
+        }
+      }
+    });
+
     registerBtn.addEventListener("click", async () => {
       showForm();
       // Defer to ensure element is visible before invoking picker
@@ -196,42 +234,8 @@
 
     uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      clearUploadMessage();
-      
-      const file = csvFileInput.files[0];
-      if (!file) {
-        setUploadMessage("CSV 파일을 선택해주세요.", true);
-        return;
-      }
-
-      try {
-        const text = await file.text();
-        const records = parseCSV(text);
-        
-        if (records.length === 0) {
-          setUploadMessage("유효한 데이터가 없습니다.", true);
-          return;
-        }
-
-        // 기존 데이터와 병합하여 누적값 계산
-        const existingRecords = await DB.loadRecords();
-        const mergedRecords = mergeAndCalculateCumulative(existingRecords, records);
-        
-        // DB에 저장
-        for (const record of mergedRecords) {
-          await DB.addRecord(record);
-        }
-
-        setUploadMessage(`${records.length}개의 레코드가 성공적으로 업로드되었습니다.`);
-        uploadForm.reset();
-        
-        // 조회 화면으로 이동
-        showGrid();
-        await renderGrid();
-      } catch (error) {
-        console.error('CSV 업로드 실패:', error);
-        setUploadMessage(`업로드 실패: ${error.message}`, true);
-      }
+      // 파일 선택 시 자동으로 처리되므로 submit 이벤트는 무시
+      return false;
     });
 
     studyForm.addEventListener("submit", async (e) => {
@@ -282,7 +286,19 @@
       if (target && target.matches('input.row-check')) {
         const id = target.getAttribute('data-id');
         if (id) {
-          if (target.checked) selectedIds.add(id); else selectedIds.delete(id);
+          if (target.checked) {
+            selectedIds.add(id);
+            const tr = target.closest('tr');
+            if (tr) {
+              tr.setAttribute('data-selected', 'true');
+            }
+          } else {
+            selectedIds.delete(id);
+            const tr = target.closest('tr');
+            if (tr) {
+              tr.removeAttribute('data-selected');
+            }
+          }
           // Toggle actions inline for faster UX without full re-render
           const tr = target.closest('tr');
           if (tr) {
@@ -609,6 +625,12 @@
         cb.className = 'row-check';
         cb.setAttribute('data-id', String(rec.id || ''));
         cb.checked = rec.id ? selectedIds.has(String(rec.id)) : false;
+        
+        // 체크박스 선택 상태에 따라 행에 data-selected 속성 설정
+        if (cb.checked && rec.id) {
+          tr.setAttribute('data-selected', 'true');
+        }
+        
         tdCheck.appendChild(cb);
 
         // date with weekday
