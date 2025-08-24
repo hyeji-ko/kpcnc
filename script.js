@@ -43,7 +43,7 @@
     let currentPage = 0;
     const pageSize = 7; // 7일 단위
     
-    // 현재 선택된 년월
+    // 현재 선택된 년월 - 항상 현재일자로 설정
     let selectedYear = new Date().getFullYear();
     let selectedMonth = new Date().getMonth() + 1;
 
@@ -146,7 +146,7 @@
       showGrid();
       currentPage = 0; // 조회 시 첫 페이지로 이동
       
-      // 현재 년월로 설정
+      // 항상 현재 년월로 설정
       const now = new Date();
       selectedYear = now.getFullYear();
       selectedMonth = now.getMonth() + 1;
@@ -232,7 +232,7 @@
         selectedMonth = month;
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
-        currentPage = 0;
+        currentPage = 0; // 선택 시 첫 페이지로 이동
         renderGrid();
       });
     });
@@ -246,7 +246,7 @@
         updateCalendarDisplay();
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
-        currentPage = 0;
+        currentPage = 0; // 선택 시 첫 페이지로 이동
         renderGrid();
       });
     });
@@ -522,6 +522,11 @@ Firebase 초기화에 실패했습니다.
 
     // Init view: show grid by default
     showGrid();
+    
+    // 항상 현재일자 년월로 설정
+    const now = new Date();
+    selectedYear = now.getFullYear();
+    selectedMonth = now.getMonth() + 1;
     updateMonthDisplay();
     
     // 초기 로드 시 조회 버튼 활성화
@@ -798,8 +803,8 @@ Firebase 초기화에 실패했습니다.
         return;
       }
 
-      // Sort by date desc for display
-      const sorted = [...filteredRecords].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+      // Sort by date asc for display (현재일자가 첫 번째로 표시)
+      const sorted = [...filteredRecords].sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
 
       // 7일 단위로 페이지 계산
       const totalPages = Math.ceil(sorted.length / pageSize);
@@ -1103,23 +1108,6 @@ function createProgressModal(title, totalItems) {
       </div>
       <p class="progress-status"></p>
     </div>
-  `;
-  modal.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 300px;
-    text-align: center;
   `;
   return modal;
 }
