@@ -26,6 +26,7 @@
     remoteInitAttempted = true;
 
     try {
+      console.log('Firebase 모듈 로딩 시작...');
       const [{ initializeApp }, { getAuth, signInAnonymously }, { getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc }]
         = await Promise.all([
           import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
@@ -39,18 +40,30 @@
         return null;
       }
 
+      console.log('Firebase 설정 확인됨:', config);
+      console.log('Firebase 앱 초기화 시작...');
+      
       const app = initializeApp(config);
+      console.log('Firebase 앱 초기화 성공');
+      
       const auth = getAuth(app);
+      console.log('Firebase Auth 초기화 성공');
+      
       let userCred;
       try {
+        console.log('익명 인증 시도...');
         userCred = await signInAnonymously(auth);
         console.log('Firebase 익명 인증 성공:', userCred.user?.uid);
       } catch (e) {
         console.error('Firebase 익명 인증 실패:', e);
+        console.error('에러 코드:', e.code);
+        console.error('에러 메시지:', e.message);
         return null;
       }
+      
       const uid = userCred.user?.uid || 'anonymous';
       const db = getFirestore(app);
+      console.log('Firestore 초기화 성공');
 
       const baseCol = collection(db, 'users', uid, 'records');
 
@@ -126,6 +139,11 @@
       return remoteImpl;
     } catch (e) {
       console.error('Firebase 초기화 실패:', e);
+      console.error('에러 상세 정보:', {
+        name: e.name,
+        message: e.message,
+        stack: e.stack
+      });
       return null;
     }
   }
