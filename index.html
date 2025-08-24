@@ -7,28 +7,6 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>" />
     <link rel="stylesheet" href="style.css" />
     <script src="config.js"></script>
-    <script>
-      (function () {
-        try {
-          var h = location.hostname || '';
-          var proto = location.protocol || '';
-          var sp = new URLSearchParams(location.search || '');
-          var forceLocal = sp.has('local') || sp.has('offline');
-          var isIPv4 = /^\d+\.\d+\.\d+\.\d+$/.test(h);
-          var isPrivateIPv4 = isIPv4 && (
-            h.startsWith('10.') || h.startsWith('192.168.') || (h.startsWith('172.') && (function(){var o=Number(h.split('.')[1]);return o>=16&&o<=31;})())
-          );
-          var isLocalHost = (h === 'localhost' || h === '127.0.0.1' || h === '[::1]');
-          var isMdns = /\.local$/i.test(h);
-          var isFile = proto === 'file:';
-          var shouldDisable = forceLocal || isFile || isLocalHost || isMdns || isPrivateIPv4;
-          if (shouldDisable) {
-            window.FIREBASE_DISABLE_REMOTE = true;
-            try { sessionStorage.setItem('studyRemoteDisabled', '1'); } catch (e) {}
-          }
-        } catch (e) {}
-      })();
-    </script>
     <script src="db.js"></script>
     <script defer src="script.js"></script>
   </head>
