@@ -73,12 +73,15 @@ async function getRemoteImpl() {
   try {
     console.log('Firebase 원격 DB 연결 시도...');
     
-    // Firebase가 초기화되었는지 확인
-    if (!window.FIREBASE_INITIALIZED) {
+    // Firebase 상태 확인
+    const status = window.checkFirebaseStatus();
+    console.log('Firebase 상태:', status);
+    
+    if (!status.initialized) {
       console.warn('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
       const initialized = await window.initializeFirebase();
       if (!initialized) {
-        throw new Error('Firebase 초기화에 실패했습니다.');
+        throw new Error(`Firebase 초기화 실패: ${status.error || '알 수 없는 오류'}`);
       }
     }
     
@@ -94,21 +97,28 @@ async function getRemoteImpl() {
     const db = firebase.firestore();
     console.log('Firestore 인스턴스 생성됨');
     
-    // Firestore 설정 확인
+    // Firestore 설정 재확인 (WebChannel 오류 방지)
     const settings = {
       cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-      experimentalForceLongPolling: true, // 연결 안정성 향상
-      useFetchStreams: false // WebChannel 대신 Fetch 사용
+      experimentalForceLongPolling: true,
+      useFetchStreams: false,
+      ignoreUndefinedProperties: true
     };
     
     db.settings(settings);
-    console.log('Firestore 설정 적용됨:', settings);
+    console.log('Firestore 설정 재적용됨:', settings);
     
     // 익명 인증 시도
     console.log('익명 인증 시도...');
     const auth = firebase.auth();
-    const userCredential = await auth.signInAnonymously();
-    const user = userCredential.user;
+    
+    // 인증 상태 확인
+    let user = auth.currentUser;
+    if (!user) {
+      console.log('새로운 익명 인증 시도...');
+      const userCredential = await auth.signInAnonymously();
+      user = userCredential.user;
+    }
     
     console.log('익명 인증 성공:', user.uid);
     
@@ -117,6 +127,14 @@ async function getRemoteImpl() {
     const recordsCollection = db.collection('users').doc(userId).collection('records');
     
     console.log('Firestore 컬렉션 경로 설정됨:', `users/${userId}/records`);
+    
+    // 연결 테스트
+    try {
+      await recordsCollection.limit(1).get();
+      console.log('Firestore 컬렉션 연결 테스트 성공');
+    } catch (testError) {
+      console.warn('컬렉션 연결 테스트 실패 (정상적일 수 있음):', testError.message);
+    }
     
     return {
       async loadRecords() {
