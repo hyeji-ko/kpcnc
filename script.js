@@ -1513,12 +1513,6 @@ Firebase 초기화에 실패했습니다.
           case 'csv':
             await downloadCSV(sortedRecords, filename);
             break;
-          case 'txt':
-            await downloadTXT(sortedRecords, filename);
-            break;
-          case 'docx':
-            await downloadDOCX(sortedRecords, filename);
-            break;
           case 'pdf':
             await downloadPDF(sortedRecords, filename);
             break;
@@ -1554,111 +1548,9 @@ Firebase 초기화에 실패했습니다.
       downloadBlob(blob, `${filename}.csv`);
     }
 
-    // TXT 다운로드
-    async function downloadTXT(records, filename) {
-      const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
-      const txtContent = [
-        '학습시간 기록',
-        '='.repeat(50),
-        '',
-        headers.join('\t'),
-        ...records.map(rec => [
-          rec.date,
-          rec.plan,
-          rec.hours,
-          rec.planCumulative,
-          rec.hoursCumulative,
-          rec.percentage
-        ].join('\t'))
-      ].join('\n');
-      
-      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
-      downloadBlob(blob, `${filename}.txt`);
-    }
 
-    // DOCX 다운로드 (실제 Word 문서 형식)
-    async function downloadDOCX(records, filename) {
-      try {
-        // 실제 DOCX 파일 생성을 위해 HTML 기반으로 대체
-        // (브라우저에서 직접 DOCX 생성은 복잡하므로 HTML로 생성 후 Word에서 열기)
-        await downloadDOCXFallback(records, filename);
-      } catch (error) {
-        console.error('DOCX 생성 실패:', error);
-        showDownloadMessage('DOCX 생성 실패. HTML 파일로 다운로드되었습니다.', true);
-      }
-    }
-    
-    // DOCX 생성 실패 시 HTML 기반 대체 다운로드
-    async function downloadDOCXFallback(records, filename) {
-      const htmlContent = generateHTMLTable(records);
-      const docxContent = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>${filename}</title>
-<style>
-body { 
-  font-family: 'Malgun Gothic', Arial, sans-serif; 
-  margin: 20px; 
-  line-height: 1.6;
-}
-table { 
-  border-collapse: collapse; 
-  width: 100%; 
-  margin-top: 20px; 
-  font-size: 12px;
-}
-th, td { 
-  border: 1px solid #333; 
-  padding: 8px; 
-  text-align: center; 
-  vertical-align: middle;
-}
-th { 
-  background-color: #f2f2f2; 
-  font-weight: bold; 
-  color: #333;
-}
-h1 { 
-  color: #333; 
-  text-align: center; 
-  font-size: 24px;
-  margin-bottom: 30px;
-}
-@media print {
-  body { margin: 0; }
-  table { page-break-inside: auto; }
-  tr { page-break-inside: avoid; page-break-after: auto; }
-}
-</style>
-</head>
-<body>
-<h1>학습시간 기록</h1>
-${htmlContent}
-<div style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
-  <p>생성일시: ${new Date().toLocaleString('ko-KR')}</p>
-  <p>총 ${records.length}개 레코드</p>
-</div>
-<script>
-  // 자동 인쇄 다이얼로그 열기 (Word에서 열기 가능)
-  window.onload = function() {
-    setTimeout(function() {
-      // 인쇄 다이얼로그 열기
-      if (window.print) {
-        window.print();
-      }
-    }, 1000);
-  };
-</script>
-</body>
-</html>`;
-       
-       const blob = new Blob([docxContent], { type: 'text/html' });
-       downloadBlob(blob, `${filename}_word.html`);
-       
-       // 사용자에게 안내 메시지 표시
-       showDownloadMessage('HTML 파일로 다운로드되었습니다. Word에서 열거나 브라우저에서 인쇄하여 사용하세요.', false);
-     }
+
+
 
 // PDF 다운로드 (실제 PDF 형식)
 async function downloadPDF(records, filename) {
