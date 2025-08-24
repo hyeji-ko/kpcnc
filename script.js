@@ -161,7 +161,7 @@
       // 현재일자 페이지로 이동하기 위해 currentPage를 -1로 설정 (renderGrid에서 자동 계산)
       currentPage = -1;
       
-      await renderGrid();
+      await renderGrid(false); // 현재일자 페이지로 이동
     });
     
     // 일괄삭제 버튼 이벤트 리스너
@@ -218,13 +218,24 @@
     prevPageBtn.addEventListener("click", async () => {
       if (currentPage > 0) {
         currentPage--;
-        await renderGrid();
+        await renderGrid(false); // 일반 페이지네이션 모드
       }
     });
     
     nextPageBtn.addEventListener("click", async () => {
-      currentPage++;
-      await renderGrid();
+      const records = await DB.loadRecords();
+      const filteredRecords = records.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getFullYear() === selectedYear && 
+               recordDate.getMonth() === selectedMonth - 1;
+      });
+      const sorted = [...filteredRecords].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+      const totalPages = Math.ceil(sorted.length / pageSize);
+      
+      if (currentPage < totalPages - 1) {
+        currentPage++;
+        await renderGrid(false); // 일반 페이지네이션 모드
+      }
     });
     
     // 커스텀 달력 이벤트 리스너
@@ -242,7 +253,7 @@
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
         currentPage = -1; // 선택 시 현재일자 페이지로 이동
-        renderGrid();
+        renderGrid(false); // 현재일자 페이지로 이동
       });
     });
     
@@ -256,7 +267,7 @@
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
         currentPage = -1; // 선택 시 현재일자 페이지로 이동
-        renderGrid();
+        renderGrid(false); // 현재일자 페이지로 이동
       });
     });
     
@@ -565,7 +576,7 @@ Firebase 초기화에 실패했습니다.
     currentPage = -1;
     
     try {
-      await renderGrid();
+      await renderGrid(false); // 초기 로드 시 현재일자 페이지로 이동
     } catch (e) {
       console.error("초기 데이터 로드 실패:", e);
       alert(`데이터 로드 실패: ${e.message}\n\nFirebase 연결을 확인해주세요.`);
@@ -864,7 +875,7 @@ Firebase 초기화에 실패했습니다.
       }
     }
 
-    async function renderGrid() {
+    async function renderGrid(isPaginationClick = true) {
       const records = await DB.loadRecords();
       tbody.innerHTML = "";
       
@@ -895,16 +906,19 @@ Firebase 초기화에 실패했습니다.
       // 7일 단위로 페이지 계산
       const totalPages = Math.ceil(sorted.length / pageSize);
       
-      // 현재일자가 첫 번째 행에 표시되도록 페이지 계산
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
-      const todayIndex = sorted.findIndex(record => record.date === today);
-      
-      if (todayIndex !== -1) {
-        // 현재일자가 데이터에 있으면 해당 페이지로 설정
-        currentPage = Math.floor(todayIndex / pageSize);
-      } else {
-        // 현재일자가 데이터에 없으면 첫 페이지로 설정
-        currentPage = 0;
+      // 페이지네이션 클릭이 아닌 경우에만 현재일자 페이지로 이동
+      if (!isPaginationClick) {
+        // 현재일자가 첫 번째 행에 표시되도록 페이지 계산
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+        const todayIndex = sorted.findIndex(record => record.date === today);
+        
+        if (todayIndex !== -1) {
+          // 현재일자가 데이터에 있으면 해당 페이지로 설정
+          currentPage = Math.floor(todayIndex / pageSize);
+        } else {
+          // 현재일자가 데이터에 없으면 첫 페이지로 설정
+          currentPage = 0;
+        }
       }
       
       const startIndex = currentPage * pageSize;
@@ -1096,7 +1110,7 @@ Firebase 초기화에 실패했습니다.
       showGrid();
       
       // 데이터 새로고침
-      await renderGrid();
+      await renderGrid(false); // 현재일자 페이지로 이동
       
       // 조회 버튼 활성화 (showGrid에서 이미 처리되지만 확실히 하기 위해)
       clearActiveButtons();
