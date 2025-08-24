@@ -545,18 +545,41 @@
         await DB.init();
         console.log('Firebase DB 초기화 완료');
         
-        // DB 상태 표시
+        // DB 상태 표시 - 실제 데이터 작업으로 확인
         if (DB.isRemote) {
           console.log('✅ Firebase 원격 DB 사용 중');
           showStatusMessage('Firebase 원격 DB에 연결되었습니다.', 'success');
+          
+          // 실제 데이터 작업으로 연결 상태 재확인
+          try {
+            const testRecords = await DB.loadRecords();
+            console.log('Firebase 데이터 로드 테스트 성공:', testRecords.length);
+          } catch (testError) {
+            console.warn('Firebase 데이터 로드 테스트 실패:', testError.message);
+            
+            // 권한 문제인 경우 사용자에게 안내
+            if (testError.message.includes('permission') || testError.message.includes('권한')) {
+              showStatusMessage('Firebase 연결됨, 권한 설정 필요 - firebase-setup-guide.md 확인', 'warning');
+              setTimeout(() => {
+                showStatusMessage('Firestore 규칙을 "allow read, write: if true;"로 설정하세요', 'info');
+              }, 3000);
+            } else {
+              showStatusMessage('Firebase 연결됨, 일부 기능 제한될 수 있음', 'warning');
+            }
+          }
         } else {
           console.log('⚠️ 로컬 스토리지 사용 중');
-          showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다. 설정 가이드를 확인하세요.', 'warning');
+          showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
           
           // 로컬 스토리지 사용 시 추가 안내
           setTimeout(() => {
             showStatusMessage('현재 로컬 스토리지 사용 중 - 데이터는 이 브라우저에만 저장됩니다.', 'info');
           }, 3000);
+          
+          // Firebase 설정 안내
+          setTimeout(() => {
+            showStatusMessage('Firebase 설정: firebase-setup-guide.md 파일을 참조하세요', 'info');
+          }, 6000);
         }
       }
     } catch (e) {
@@ -569,7 +592,8 @@ Firebase 초기화에 실패했습니다.
 가능한 원인:
 1. 인터넷 연결 확인
 2. Firebase 프로젝트 설정 확인
-3. 브라우저 캐시 삭제 후 재시도
+3. Firestore 규칙 설정 확인 (firebase-setup-guide.md 참조)
+4. 브라우저 캐시 삭제 후 재시도
 
 에러 상세: ${e.message}
       `;
