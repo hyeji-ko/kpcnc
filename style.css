@@ -776,9 +776,8 @@ table.data-table tbody tr[data-selected="true"]:hover td {
 }
 
 .format-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  display: flex;
+  justify-content: center;
   margin-top: 8px;
 }
 
