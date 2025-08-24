@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 설정 테스트</title>
+</head>
+<body>
+    <h1>Firebase 설정 테스트</h1>
+    <div id="status">테스트 중...</div>
+    
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        
+        const statusDiv = document.getElementById('status');
+        
+        const config = {
+            apiKey: "AIzaSyDQEmosR2YJHPQmBMgmFu5hXgQuoGr01Mw",
+            authDomain: "study-4cc66.firebaseapp.com",
+            projectId: "study-4cc66",
+            storageBucket: "study-4cc66.appspot.com",
+            messagingSenderId: "663288812068",
+            appId: "1:663288812068:web:d8a34f4e20ecf654f2beb1",
+            measurementId: "G-CFB3X6Q57B"
+        };
+        
+        async function testFirebase() {
+            try {
+                statusDiv.innerHTML = 'Firebase 앱 초기화 중...';
+                const app = initializeApp(config);
+                statusDiv.innerHTML = 'Firebase 앱 초기화 성공 ✅<br>Auth 초기화 중...';
+                
+                const auth = getAuth(app);
+                statusDiv.innerHTML = 'Auth 초기화 성공 ✅<br>익명 인증 시도 중...';
+                
+                const userCred = await signInAnonymously(auth);
+                statusDiv.innerHTML = '익명 인증 성공 ✅<br>Firestore 초기화 중...';
+                
+                const db = getFirestore(app);
+                statusDiv.innerHTML = 'Firestore 초기화 성공 ✅<br><br>🎉 모든 Firebase 설정이 정상입니다!';
+                
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Firebase 테스트 실패: ${error.message}<br><br>에러 코드: ${error.code || 'N/A'}`;
+                console.error('Firebase 테스트 에러:', error);
+            }
+        }
+        
+        testFirebase();
+    </script>
+</body>
+</html>
