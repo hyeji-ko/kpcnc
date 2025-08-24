@@ -770,3 +770,88 @@ table.data-table tbody tr[data-selected="true"]:hover td {
   border-color: #ffffff !important;
 }
 
+/* Download section */
+#downloadSection {
+  max-width: 700px;
+}
+
+.format-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.format-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  text-align: center;
+}
+
+.format-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 125, 246, 0.3);
+}
+
+.format-icon {
+  font-size: 24px;
+}
+
+.range-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.radio-option:hover {
+  background-color: var(--accent);
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.radio-option span {
+  color: var(--text);
+  font-size: 14px;
+}
+
+#downloadFilename {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* 다운로드 메시지 스타일 */
+#downloadMessage.error {
+  color: #ef4444;
+}
+
+#downloadMessage:not(.error) {
+  color: #10b981;
+}
+
