@@ -19,11 +19,12 @@
       // Firebase SDK 로드 완료 후 초기화
       document.addEventListener('DOMContentLoaded', async function() {
         try {
-          console.log('Firebase 초기화 시도...');
+          console.log('Firebase 초기화 준비...');
           
-          // 잠시 대기 후 초기화 (SDK 완전 로드 보장)
+          // SDK 완전 로드 후 초기화
           setTimeout(async () => {
             try {
+              console.log('Firebase 초기화 시작...');
               const initialized = await window.initializeFirebase();
               if (initialized) {
                 console.log('✅ Firebase 초기화 성공');
@@ -33,7 +34,7 @@
             } catch (error) {
               console.error('Firebase 초기화 중 오류:', error);
             }
-          }, 1000);
+          }, 1500); // 1.5초 대기로 SDK 완전 로드 보장
           
         } catch (error) {
           console.error('Firebase 초기화 준비 중 오류:', error);
