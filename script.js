@@ -378,7 +378,7 @@
           
           // Firebase 초기화 대기
           let attempts = 0;
-          const maxAttempts = 10;
+          const maxAttempts = 20; // 최대 10초 대기
           
           while (!firebaseStatus.initialized && attempts < maxAttempts) {
             console.log(`Firebase 초기화 대기 중... (${attempts + 1}/${maxAttempts})`);
@@ -390,7 +390,8 @@
           }
           
           if (!firebaseStatus.initialized) {
-            console.warn('Firebase 초기화 시간 초과');
+            console.warn('Firebase 초기화 시간 초과 (10초)');
+            console.log('Firebase 상태:', window.checkFirebaseStatus());
           }
         }
         
