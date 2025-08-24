@@ -37,13 +37,16 @@ window.initializeFirebase = async function() {
     // Firestore 인스턴스 가져오기
     const db = firebase.firestore();
     
-    // Firestore 설정 - 한 번만 적용
+    // Firestore 설정 - WebChannel 오류 완전 방지
     if (!window.FIRESTORE_CONFIGURED) {
       const settings = {
         cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
         experimentalForceLongPolling: true,
         useFetchStreams: false,
-        ignoreUndefinedProperties: true
+        ignoreUndefinedProperties: true,
+        // 추가 설정으로 WebChannel 오류 방지
+        ssl: true,
+        experimentalAutoDetectLongPolling: true
       };
       
       db.settings(settings);
@@ -82,6 +85,25 @@ window.checkFirebaseStatus = function() {
     config: window.FIREBASE_CONFIG,
     firestoreConfigured: window.FIRESTORE_CONFIGURED
   };
+};
+
+// Firebase 연결 테스트 함수
+window.testFirebaseConnection = async function() {
+  try {
+    if (!window.FIREBASE_INITIALIZED) {
+      return { success: false, error: 'Firebase가 초기화되지 않았습니다.' };
+    }
+    
+    const db = firebase.firestore();
+    const testCollection = db.collection('_connection_test');
+    
+    // 간단한 읽기 테스트
+    await testCollection.limit(1).get();
+    
+    return { success: true, message: 'Firebase 연결 성공' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 };
 
 
