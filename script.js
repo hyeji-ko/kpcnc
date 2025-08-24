@@ -1513,6 +1513,7 @@ function updateProgress(modal, current, total, statusText) {
     progressTotal.textContent = total;
   }
   if (progressPercentage) {
+    const percentage = (current / total) * 100;
     progressPercentage.textContent = `(${percentage.toFixed(0)}%)`;
   }
 }
