@@ -7,20 +7,11 @@
 
   /** @typedef {{ id?: string; date: string; plan: number; planCumulative: number; hours: number; hoursCumulative: number; percentage: number }} StudyRecord */
 
-  const DISABLE_KEY = 'studyRemoteDisabled';
   let remoteImpl = null;
-  let remoteDisabled = false;
   let remoteInitAttempted = false;
   
-  try {
-    if (sessionStorage.getItem(DISABLE_KEY) === '1') {
-      remoteDisabled = true;
-    }
-  } catch {}
-
   function disableRemote() {
-    remoteDisabled = true;
-    try { sessionStorage.setItem(DISABLE_KEY, '1'); } catch {}
+    // This function is no longer needed as remote is always enabled
   }
 
   /** Local fallback implementation */
@@ -129,28 +120,13 @@
     },
   };
 
-  function isLocalLikeHost() {
-    try {
-      const h = location.hostname || '';
-      const proto = location.protocol || '';
-      if (proto === 'file:') return true;
-      if (h === 'localhost' || h === '127.0.0.1' || h === '[::1]') return true;
-      if (/\.local$/i.test(h)) return true;
-      if (/^\d+\.\d+\.\d+\.\d+$/.test(h)) {
-        if (h.startsWith('10.') || h.startsWith('192.168.')) return true;
-        if (h.startsWith('172.')) { const o = Number(h.split('.')[1]); if (o>=16 && o<=31) return true; }
-      }
-    } catch {}
-    return false;
-  }
-
   function getFirebaseConfig() {
     if (typeof window === "undefined") return null;
     try {
-      if (isLocalLikeHost() || window.FIREBASE_DISABLE_REMOTE) return null;
-      if (sessionStorage.getItem(DISABLE_KEY) === '1') return null;
+      // Always use Firebase, no local fallback
+      return window.FIREBASE_CONFIG || window.firebaseConfig || null;
     } catch {}
-    return window.FIREBASE_CONFIG || window.firebaseConfig || null;
+    return null;
   }
 
   /** @returns {boolean} */
@@ -160,16 +136,6 @@
 
   async function getRemoteImpl() {
     if (remoteImpl) return remoteImpl;
-    if (remoteDisabled) return null;
-    if (typeof window !== 'undefined' && window.FIREBASE_DISABLE_REMOTE) {
-      disableRemote();
-      return null;
-    }
-    const config = getFirebaseConfig();
-    if (!config) {
-      disableRemote();
-      return null;
-    }
     if (remoteInitAttempted) return null;
     remoteInitAttempted = true;
 
@@ -181,6 +147,12 @@
           import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'),
         ]);
 
+      const config = getFirebaseConfig();
+      if (!config) {
+        console.error('Firebase 설정이 없습니다.');
+        return null;
+      }
+
       const app = initializeApp(config);
       const auth = getAuth(app);
       let userCred;
@@ -189,7 +161,6 @@
         console.log('Firebase 익명 인증 성공:', userCred.user?.uid);
       } catch (e) {
         console.warn('Firebase 익명 인증 실패, 로컬 저장소로 fallback:', e);
-        disableRemote();
         return null;
       }
       const uid = userCred.user?.uid || 'anonymous';
@@ -269,7 +240,6 @@
       return remoteImpl;
     } catch (e) {
       console.error('Firebase 초기화 실패:', e);
-      disableRemote();
       return null;
     }
   }
@@ -277,29 +247,28 @@
   const DB = {
     /** Initialize DB. Returns true if remote is used. */
     async init() {
-      if (!hasFirebaseConfig()) {
-        console.log('Firebase 설정이 없어 로컬 저장소를 사용합니다.');
-        disableRemote();
-        return false;
-      }
       try {
+        if (!hasFirebaseConfig()) {
+          console.error('Firebase 설정이 없습니다. config.js 파일을 확인해주세요.');
+          throw new Error('Firebase 설정이 없습니다.');
+        }
+        
         const impl = await getRemoteImpl();
         if (impl) {
-          console.log('Firebase 원격 DB가 성공적으로 초기화되었습니다.');
+          console.log('Firebase DB 초기화 성공');
           return true;
         } else {
-          console.log('Firebase 초기화 실패, 로컬 저장소를 사용합니다.');
-          return false;
+          console.error('Firebase DB 초기화 실패');
+          throw new Error('Firebase DB 초기화 실패');
         }
       } catch (e) {
-        console.warn('Firebase DB 초기화 실패, 로컬 저장소로 fallback:', e);
-        disableRemote();
-        return false;
+        console.error('Firebase DB 초기화 실패:', e);
+        throw new Error(`Firebase 초기화 실패: ${e.message}`);
       }
     },
     /** @returns {Promise<StudyRecord[]>} */
     async loadRecords() {
-      if (!remoteDisabled) try {
+      try {
         const impl = await getRemoteImpl();
         if (impl) {
           const remoteRows = await impl.loadRecords();
@@ -311,7 +280,6 @@
         }
       } catch (e) {
         console.warn('원격 DB 로드 실패, 로컬 저장소 사용:', e);
-        disableRemote();
       }
       // 원격이 비어있거나 실패한 경우 로컬 캐시 사용
       return localImpl.loadRecords();
@@ -319,7 +287,7 @@
     /** @param {StudyRecord} record */
     async addRecord(record) {
       let savedRemote = false;
-      if (!remoteDisabled) try {
+      try {
         const impl = await getRemoteImpl();
         if (impl) {
           const newId = await impl.addRecord(record);
@@ -329,7 +297,6 @@
         }
       } catch (e) {
         console.warn('원격 저장 실패, 로컬 저장소에 저장:', e);
-        disableRemote();
       }
       // 항상 로컬에 캐시하여 UI가 데이터를 즉시 표시할 수 있도록 함
       const id = await localImpl.addRecord(record);
@@ -337,18 +304,17 @@
     },
     /** @param {string} id @param {{ hours?: number, date?: string }} patch */
     async updateRecord(id, patch) {
-      if (!remoteDisabled) try {
+      try {
         const impl = await getRemoteImpl();
         if (impl) await impl.updateRecord(id, patch);
       } catch (e) {
         console.warn('원격 업데이트 실패, 로컬만 업데이트:', e);
-        disableRemote();
       }
       return localImpl.updateRecord(id, patch);
     },
     /** @param {string} id */
     async deleteRecord(id) {
-      if (!remoteDisabled) try {
+      try {
         const impl = await getRemoteImpl();
         if (impl) await impl.deleteRecord(id);
       } catch (e) {
