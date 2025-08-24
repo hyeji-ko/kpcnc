@@ -216,13 +216,16 @@
 
     // 페이지네이션 버튼 이벤트 리스너
     prevPageBtn.addEventListener("click", async () => {
+      console.log('이전 버튼 클릭, 현재 페이지:', currentPage);
       if (currentPage > 0) {
         currentPage--;
-        await renderGrid(false); // 일반 페이지네이션 모드
+        console.log('이전 페이지로 이동:', currentPage);
+        await renderGrid(true); // 페이지네이션 클릭 모드
       }
     });
     
     nextPageBtn.addEventListener("click", async () => {
+      console.log('다음 버튼 클릭, 현재 페이지:', currentPage);
       const records = await DB.loadRecords();
       const filteredRecords = records.filter(record => {
         const recordDate = new Date(record.date);
@@ -232,9 +235,12 @@
       const sorted = [...filteredRecords].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
       const totalPages = Math.ceil(sorted.length / pageSize);
       
+      console.log('총 페이지 수:', totalPages, '필터된 레코드 수:', filteredRecords.length);
+      
       if (currentPage < totalPages - 1) {
         currentPage++;
-        await renderGrid(false); // 일반 페이지네이션 모드
+        console.log('다음 페이지로 이동:', currentPage);
+        await renderGrid(true); // 페이지네이션 클릭 모드
       }
     });
     
@@ -465,7 +471,7 @@
         // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
         await recalculateCumulativeFromDate(rec.date);
         
-        await renderGrid();
+        await renderGrid(true); // 현재 페이지 유지
       } else if (target.closest('.delete-btn')) {
         const id = target.getAttribute('data-id');
         if (!id) return;
@@ -477,7 +483,7 @@
         // 삭제된 날짜 이후의 모든 데이터에 대해 누적값 재계산
         await recalculateCumulativeFromDate(rec.date);
         
-        await renderGrid();
+        await renderGrid(true); // 현재 페이지 유지
       }
     });
 
@@ -906,6 +912,8 @@ Firebase 초기화에 실패했습니다.
       // 7일 단위로 페이지 계산
       const totalPages = Math.ceil(sorted.length / pageSize);
       
+      console.log('renderGrid 호출:', { isPaginationClick, currentPage, totalPages, filteredRecordsLength: filteredRecords.length });
+      
       // 페이지네이션 클릭이 아닌 경우에만 현재일자 페이지로 이동
       if (!isPaginationClick) {
         // 현재일자가 첫 번째 행에 표시되도록 페이지 계산
@@ -919,7 +927,14 @@ Firebase 초기화에 실패했습니다.
           // 현재일자가 데이터에 없으면 첫 페이지로 설정
           currentPage = 0;
         }
+        console.log('현재일자 페이지로 이동:', { today, todayIndex, calculatedPage: currentPage });
       }
+      
+      // 페이지 범위 검증
+      if (currentPage < 0) currentPage = 0;
+      if (currentPage >= totalPages) currentPage = totalPages - 1;
+      
+      console.log('최종 페이지 정보:', { currentPage, totalPages, startIndex: currentPage * pageSize });
       
       const startIndex = currentPage * pageSize;
       const endIndex = Math.min(startIndex + pageSize, sorted.length);
@@ -1049,10 +1064,11 @@ Firebase 초기화에 실패했습니다.
 
       paginationNav.classList.remove("hidden");
       
-      // 페이지 정보 표시
+      // 페이지 정보 표시 (1부터 시작하는 페이지 번호)
+      const currentPageDisplay = currentPage + 1;
       const startRecord = currentPage * pageSize + 1;
       const endRecord = Math.min((currentPage + 1) * pageSize, totalRecords);
-      pageInfo.textContent = `${startRecord}-${endRecord} / ${totalRecords}`;
+      pageInfo.textContent = `${startRecord}-${endRecord} / ${totalRecords} (${currentPageDisplay}/${totalPages}페이지)`;
       
       // 버튼 활성화/비활성화
       prevPageBtn.disabled = currentPage === 0;
