@@ -470,9 +470,11 @@ Firebase 초기화에 실패했습니다.
       clearActiveButtons();
       listBtn.classList.add('active');
       
-      // 등록버튼과 일괄삭제 버튼 비활성화
-      registerBtn.disabled = true;
-      batchDeleteBtn.disabled = true;
+      // 모든 버튼 활성화 (일괄삭제 버튼도 포함)
+      registerBtn.disabled = false;
+      listBtn.disabled = false;
+      uploadBtn.disabled = false;
+      batchDeleteBtn.disabled = false;
     }
 
     function showUpload() {
