@@ -264,20 +264,20 @@
     
     // 월 선택 이벤트
     monthItems.forEach(item => {
-      item.addEventListener("click", (e) => {
+      item.addEventListener("click", async (e) => {
         e.stopPropagation();
         const month = parseInt(item.dataset.month);
         selectedMonth = month;
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
         currentPage = -1; // 선택 시 현재일자 페이지로 이동
-        renderGrid(false); // 현재일자 페이지로 이동
+        await renderGrid(false); // 현재일자 페이지로 이동
       });
     });
     
     // 년도 선택 이벤트
     yearItems.forEach(item => {
-      item.addEventListener("click", (e) => {
+      item.addEventListener("click", async (e) => {
         e.stopPropagation();
         const year = parseInt(item.dataset.year);
         selectedYear = year;
@@ -285,7 +285,7 @@
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
         currentPage = -1; // 선택 시 현재일자 페이지로 이동
-        renderGrid(false); // 현재일자 페이지로 이동
+        await renderGrid(false); // 현재일자 페이지로 이동
       });
     });
     
@@ -1006,203 +1006,230 @@ Firebase 초기화에 실패했습니다.
     }
 
     async function renderGrid(isPaginationClick = true) {
-      const records = await DB.loadRecords();
-      tbody.innerHTML = "";
+      // 로딩 모달 표시
+      const loadingModal = createLoadingModal('데이터 로딩 중...');
+      document.body.appendChild(loadingModal);
       
-      // 선택된 년월의 데이터만 필터링
-      let filteredRecords = records;
-      
-      filteredRecords = records.filter(record => {
-        const recordDate = new Date(record.date);
-        return recordDate.getFullYear() === selectedYear && 
-               recordDate.getMonth() === selectedMonth - 1;
-      });
-      
-      if (filteredRecords.length === 0) {
+      try {
+        const records = await DB.loadRecords();
+        tbody.innerHTML = "";
+        
+        // 선택된 년월의 데이터만 필터링
+        let filteredRecords = records;
+        
+        filteredRecords = records.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate.getFullYear() === selectedYear && 
+                 recordDate.getMonth() === selectedMonth - 1;
+        });
+        
+        if (filteredRecords.length === 0) {
+          const tr = document.createElement("tr");
+          tr.className = "empty-row";
+          const td = document.createElement("td");
+          td.colSpan = 7;
+          td.textContent = "선택한 년월에 등록된 데이터가 없습니다.";
+          tr.appendChild(td);
+          tbody.appendChild(tr);
+          paginationNav.classList.add("hidden");
+          
+          // 로딩 모달 제거
+          loadingModal.remove();
+          return;
+        }
+
+        // Sort by date desc for display (최신일자가 첫 번째로 표시)
+        const sorted = [...filteredRecords].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+        // 7일 단위로 페이지 계산
+        const totalPages = Math.ceil(sorted.length / pageSize);
+        
+        console.log('renderGrid 호출:', { isPaginationClick, currentPage, totalPages, filteredRecordsLength: filteredRecords.length });
+        
+        // 페이지네이션 클릭이 아닌 경우에만 현재일자 페이지로 이동
+        if (!isPaginationClick) {
+          // 현재일자가 첫 번째 행에 표시되도록 페이지 계산
+          const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+          const todayIndex = sorted.findIndex(record => record.date === today);
+          
+          if (todayIndex !== -1) {
+            // 현재일자가 데이터에 있으면 해당 페이지로 설정
+            currentPage = Math.floor(todayIndex / pageSize);
+          } else {
+            // 현재일자가 데이터에 없으면 첫 페이지로 설정
+            currentPage = 0;
+          }
+          console.log('현재일자 페이지로 이동:', { today, todayIndex, calculatedPage: currentPage });
+        }
+        
+        // 페이지 범위 검증
+        if (currentPage < 0) currentPage = 0;
+        if (currentPage >= totalPages) currentPage = totalPages - 1;
+        
+        console.log('최종 페이지 정보:', { currentPage, totalPages, startIndex: currentPage * pageSize });
+        
+        const startIndex = currentPage * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, sorted.length);
+        const pageRecords = sorted.slice(startIndex, endIndex);
+
+        // 현재 페이지의 레코드만 렌더링
+        for (let i = 0; i < pageRecords.length; i++) {
+          const rec = pageRecords[i];
+          const tr = document.createElement("tr");
+          tr.setAttribute('data-id', String(rec.id || ''));
+
+          // checkbox
+          const tdCheck = document.createElement('td');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'row-check';
+          cb.setAttribute('data-id', String(rec.id || ''));
+          // 체크박스 선택 상태 초기화 (수정/삭제 후 재조회 시)
+          cb.checked = false;
+          
+          // 체크박스 선택 상태에 따라 행에 data-selected 속성 설정
+          if (cb.checked && rec.id) {
+            tr.setAttribute('data-selected', 'true');
+          }
+          
+          // 체크박스 변경 이벤트 리스너 추가
+          cb.addEventListener("change", (e) => {
+            const id = e.target.getAttribute('data-id');
+            if (id) {
+              if (e.target.checked) {
+                selectedIds.add(id);
+                tr.setAttribute('data-selected', 'true');
+                // 체크박스 선택 시 해당 행의 계획, 실적을 편집 가능하게 만들기
+                makeRowEditable(tr, rec);
+              } else {
+                selectedIds.delete(id);
+                tr.removeAttribute('data-selected');
+                // 체크박스 해제 시 편집 모드 해제
+                makeRowNonEditable(tr, rec);
+              }
+              // 액션 버튼 토글
+              toggleActionButtons(tr, e.target.checked, id);
+            }
+          });
+          
+          tdCheck.appendChild(cb);
+
+          // date with weekday
+          const tdDate = document.createElement("td");
+          tdDate.textContent = formatDateWithWeekday(rec.date);
+
+          // plan
+          const tdPlan = document.createElement("td");
+          const planInput = document.createElement("input");
+          planInput.type = "text";
+          planInput.value = formatHours(rec.plan);
+          planInput.disabled = true; // 기본적으로 비활성화
+          planInput.className = "plan-input";
+          planInput.style.width = "60px";
+          planInput.style.textAlign = "center";
+          planInput.style.border = "1px solid #ccc";
+          planInput.style.borderRadius = "4px";
+          planInput.style.padding = "2px 4px";
+          planInput.style.backgroundColor = "#f3f4f6";
+          // input 이벤트 리스너 추가
+          planInput.addEventListener("input", (e) => {
+            const sanitized = sanitizeHoursInput(e.target.value);
+            if (e.target.value !== sanitized) {
+              const pos = e.target.selectionStart || sanitized.length;
+              e.target.value = sanitized;
+              e.target.setSelectionRange(pos, pos);
+            }
+          });
+          tdPlan.appendChild(planInput);
+
+          // plan cumulative
+          const tdPlanCum = document.createElement("td");
+          tdPlanCum.textContent = formatHours(rec.planCumulative);
+
+          // hours
+          const tdHours = document.createElement("td");
+          const hoursInput = document.createElement("input");
+          hoursInput.type = "text";
+          hoursInput.value = formatHours(rec.hours);
+          hoursInput.disabled = true; // 기본적으로 비활성화
+          hoursInput.className = "hours-input";
+          hoursInput.style.width = "60px";
+          hoursInput.style.textAlign = "center";
+          hoursInput.style.border = "1px solid #ccc";
+          hoursInput.style.borderRadius = "4px";
+          hoursInput.style.padding = "2px 4px";
+          hoursInput.style.backgroundColor = "#f3f4f6";
+          // input 이벤트 리스너 추가
+          hoursInput.addEventListener("input", (e) => {
+            const sanitized = sanitizeHoursInput(e.target.value);
+            if (e.target.value !== sanitized) {
+              const pos = e.target.selectionStart || sanitized.length;
+              e.target.value = sanitized;
+              e.target.setSelectionRange(pos, pos);
+            }
+          });
+          tdHours.appendChild(hoursInput);
+
+          // hours cumulative
+          const tdHoursCum = document.createElement("td");
+          tdHoursCum.textContent = formatHours(rec.hoursCumulative);
+
+          // percentage
+          const tdPercentage = document.createElement("td");
+          tdPercentage.textContent = `${rec.percentage}%`;
+
+          // actions
+          const tdActions = document.createElement('td');
+          tdActions.className = 'actions-cell';
+          const isSelected = rec.id ? selectedIds.has(String(rec.id)) : false;
+          if (isSelected) {
+            toggleActionButtons(tr, true, String(rec.id));
+          }
+          
+          // 호버 이벤트 직접 추가
+          tr.addEventListener('mouseenter', () => {
+            tr.style.backgroundColor = '#374151';
+            tr.style.color = '#ffffff';
+            Array.from(tr.children).forEach(td => {
+              td.style.color = '#ffffff';
+            });
+          });
+          
+          tr.addEventListener('mouseleave', () => {
+            if (!tr.hasAttribute('data-selected')) {
+              tr.style.backgroundColor = '';
+              tr.style.color = '';
+              Array.from(tr.children).forEach(td => {
+                td.style.color = '';
+              });
+            }
+          });
+          
+          tr.append(tdCheck, tdDate, tdPlan, tdPlanCum, tdHours, tdHoursCum, tdPercentage, tdActions);
+          tbody.appendChild(tr);
+        }
+
+        // 페이지네이션 업데이트 - filteredRecords를 매개변수로 전달
+        updatePagination(totalPages, filteredRecords.length);
+        
+        // 로딩 모달 제거
+        loadingModal.remove();
+      } catch (error) {
+        // 에러 발생 시 로딩 모달 제거
+        loadingModal.remove();
+        console.error('데이터 로딩 실패:', error);
+        
+        // 에러 메시지 표시
         const tr = document.createElement("tr");
-        tr.className = "empty-row";
+        tr.className = "error-row";
         const td = document.createElement("td");
         td.colSpan = 7;
-        td.textContent = "선택한 년월에 등록된 데이터가 없습니다.";
+        td.textContent = `데이터 로딩 실패: ${error.message}`;
+        td.style.color = '#ef4444';
         tr.appendChild(td);
         tbody.appendChild(tr);
         paginationNav.classList.add("hidden");
-        return;
       }
-
-      // Sort by date desc for display (최신일자가 첫 번째로 표시)
-      const sorted = [...filteredRecords].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-
-      // 7일 단위로 페이지 계산
-      const totalPages = Math.ceil(sorted.length / pageSize);
-      
-      console.log('renderGrid 호출:', { isPaginationClick, currentPage, totalPages, filteredRecordsLength: filteredRecords.length });
-      
-      // 페이지네이션 클릭이 아닌 경우에만 현재일자 페이지로 이동
-      if (!isPaginationClick) {
-        // 현재일자가 첫 번째 행에 표시되도록 페이지 계산
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
-        const todayIndex = sorted.findIndex(record => record.date === today);
-        
-        if (todayIndex !== -1) {
-          // 현재일자가 데이터에 있으면 해당 페이지로 설정
-          currentPage = Math.floor(todayIndex / pageSize);
-        } else {
-          // 현재일자가 데이터에 없으면 첫 페이지로 설정
-          currentPage = 0;
-        }
-        console.log('현재일자 페이지로 이동:', { today, todayIndex, calculatedPage: currentPage });
-      }
-      
-      // 페이지 범위 검증
-      if (currentPage < 0) currentPage = 0;
-      if (currentPage >= totalPages) currentPage = totalPages - 1;
-      
-      console.log('최종 페이지 정보:', { currentPage, totalPages, startIndex: currentPage * pageSize });
-      
-      const startIndex = currentPage * pageSize;
-      const endIndex = Math.min(startIndex + pageSize, sorted.length);
-      const pageRecords = sorted.slice(startIndex, endIndex);
-
-      // 현재 페이지의 레코드만 렌더링
-      for (let i = 0; i < pageRecords.length; i++) {
-        const rec = pageRecords[i];
-        const tr = document.createElement("tr");
-        tr.setAttribute('data-id', String(rec.id || ''));
-
-        // checkbox
-        const tdCheck = document.createElement('td');
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.className = 'row-check';
-        cb.setAttribute('data-id', String(rec.id || ''));
-        // 체크박스 선택 상태 초기화 (수정/삭제 후 재조회 시)
-        cb.checked = false;
-        
-        // 체크박스 선택 상태에 따라 행에 data-selected 속성 설정
-        if (cb.checked && rec.id) {
-          tr.setAttribute('data-selected', 'true');
-        }
-        
-        // 체크박스 변경 이벤트 리스너 추가
-        cb.addEventListener("change", (e) => {
-          const id = e.target.getAttribute('data-id');
-          if (id) {
-            if (e.target.checked) {
-              selectedIds.add(id);
-              tr.setAttribute('data-selected', 'true');
-              // 체크박스 선택 시 해당 행의 계획, 실적을 편집 가능하게 만들기
-              makeRowEditable(tr, rec);
-            } else {
-              selectedIds.delete(id);
-              tr.removeAttribute('data-selected');
-              // 체크박스 해제 시 편집 모드 해제
-              makeRowNonEditable(tr, rec);
-            }
-            // 액션 버튼 토글
-            toggleActionButtons(tr, e.target.checked, id);
-          }
-        });
-        
-        tdCheck.appendChild(cb);
-
-        // date with weekday
-        const tdDate = document.createElement("td");
-        tdDate.textContent = formatDateWithWeekday(rec.date);
-
-        // plan
-        const tdPlan = document.createElement("td");
-        const planInput = document.createElement("input");
-        planInput.type = "text";
-        planInput.value = formatHours(rec.plan);
-        planInput.disabled = true; // 기본적으로 비활성화
-        planInput.className = "plan-input";
-        planInput.style.width = "60px";
-        planInput.style.textAlign = "center";
-        planInput.style.border = "1px solid #ccc";
-        planInput.style.borderRadius = "4px";
-        planInput.style.padding = "2px 4px";
-        planInput.style.backgroundColor = "#f3f4f6";
-        // input 이벤트 리스너 추가
-        planInput.addEventListener("input", (e) => {
-          const sanitized = sanitizeHoursInput(e.target.value);
-          if (e.target.value !== sanitized) {
-            const pos = e.target.selectionStart || sanitized.length;
-            e.target.value = sanitized;
-            e.target.setSelectionRange(pos, pos);
-          }
-        });
-        tdPlan.appendChild(planInput);
-
-        // plan cumulative
-        const tdPlanCum = document.createElement("td");
-        tdPlanCum.textContent = formatHours(rec.planCumulative);
-
-        // hours
-        const tdHours = document.createElement("td");
-        const hoursInput = document.createElement("input");
-        hoursInput.type = "text";
-        hoursInput.value = formatHours(rec.hours);
-        hoursInput.disabled = true; // 기본적으로 비활성화
-        hoursInput.className = "hours-input";
-        hoursInput.style.width = "60px";
-        hoursInput.style.textAlign = "center";
-        hoursInput.style.border = "1px solid #ccc";
-        hoursInput.style.borderRadius = "4px";
-        hoursInput.style.padding = "2px 4px";
-        hoursInput.style.backgroundColor = "#f3f4f6";
-        // input 이벤트 리스너 추가
-        hoursInput.addEventListener("input", (e) => {
-          const sanitized = sanitizeHoursInput(e.target.value);
-          if (e.target.value !== sanitized) {
-            const pos = e.target.selectionStart || sanitized.length;
-            e.target.value = sanitized;
-            e.target.setSelectionRange(pos, pos);
-          }
-        });
-        tdHours.appendChild(hoursInput);
-
-        // hours cumulative
-        const tdHoursCum = document.createElement("td");
-        tdHoursCum.textContent = formatHours(rec.hoursCumulative);
-
-        // percentage
-        const tdPercentage = document.createElement("td");
-        tdPercentage.textContent = `${rec.percentage}%`;
-
-        // actions
-        const tdActions = document.createElement('td');
-        tdActions.className = 'actions-cell';
-        const isSelected = rec.id ? selectedIds.has(String(rec.id)) : false;
-        if (isSelected) {
-          toggleActionButtons(tr, true, String(rec.id));
-        }
-        
-        // 호버 이벤트 직접 추가
-        tr.addEventListener('mouseenter', () => {
-          tr.style.backgroundColor = '#374151';
-          tr.style.color = '#ffffff';
-          Array.from(tr.children).forEach(td => {
-            td.style.color = '#ffffff';
-          });
-        });
-        
-        tr.addEventListener('mouseleave', () => {
-          if (!tr.hasAttribute('data-selected')) {
-            tr.style.backgroundColor = '';
-            tr.style.color = '';
-            Array.from(tr.children).forEach(td => {
-              td.style.color = '';
-            });
-          }
-        });
-        
-        tr.append(tdCheck, tdDate, tdPlan, tdPlanCum, tdHours, tdHoursCum, tdPercentage, tdActions);
-        tbody.appendChild(tr);
-      }
-
-      // 페이지네이션 업데이트 - filteredRecords를 매개변수로 전달
-      updatePagination(totalPages, filteredRecords.length);
     }
 
     /** @param {string} dateIso */
@@ -1482,6 +1509,29 @@ function createProgressModal(title, initialStatus = '처리 중...') {
       <div class="progress-details">
         <span class="progress-count">0</span> / <span class="progress-total">0</span>
         <span class="progress-percentage">(0%)</span>
+      </div>
+    </div>
+  `;
+  return modal;
+}
+
+/**
+ * 데이터 로딩 진행바를 표시하는 모달을 생성하는 함수
+ * @param {string} title - 모달 제목
+ * @returns {HTMLDivElement}
+ */
+function createLoadingModal(title = '데이터 로딩 중...') {
+  const modal = document.createElement('div');
+  modal.className = 'progress-modal loading-modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h2>${title}</h2>
+      <div class="loading-spinner"></div>
+      <p class="progress-status">데이터를 불러오는 중...</p>
+      <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
     </div>
   `;
