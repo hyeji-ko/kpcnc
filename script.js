@@ -129,6 +129,11 @@
     });
 
     registerBtn.addEventListener("click", async () => {
+      // 모든 버튼에서 active 클래스 제거
+      clearActiveButtons();
+      // 등록 버튼 활성화
+      registerBtn.classList.add('active');
+      
       showForm();
       // Defer to ensure element is visible before invoking picker
       requestAnimationFrame(() => {
@@ -148,6 +153,11 @@
     });
 
     listBtn.addEventListener("click", async () => {
+      // 모든 버튼에서 active 클래스 제거
+      clearActiveButtons();
+      // 조회 버튼 활성화
+      listBtn.classList.add('active');
+      
       showGrid();
       currentPage = 0; // 조회 시 첫 페이지로 이동
       
@@ -400,6 +410,10 @@
     // Init view: show grid by default
     showGrid();
     updateMonthDisplay();
+    
+    // 초기 로드 시 조회 버튼 활성화
+    listBtn.classList.add('active');
+    
     try {
       await renderGrid();
     } catch (e) {
@@ -409,17 +423,39 @@
     function showForm() {
       formSection.classList.remove("hidden");
       gridSection.classList.add("hidden");
+      uploadSection.classList.add("hidden");
+      
+      // 업로드 관련 상태 클리어
+      clearUploadMessage();
+      uploadForm.reset();
+      csvFileInput.value = '';
     }
 
     function showGrid() {
       gridSection.classList.remove("hidden");
       formSection.classList.add("hidden");
+      uploadSection.classList.add("hidden");
+      
+      // 업로드 관련 상태 클리어
+      clearUploadMessage();
+      uploadForm.reset();
+      csvFileInput.value = '';
     }
 
     function showUpload() {
       uploadSection.classList.remove("hidden");
       formSection.classList.add("hidden");
       gridSection.classList.add("hidden");
+      
+      // 다른 버튼들의 active 상태 제거하고 업로드 버튼만 활성화
+      clearActiveButtons();
+      uploadBtn.classList.add('active');
+    }
+
+    function clearActiveButtons() {
+      registerBtn.classList.remove('active');
+      listBtn.classList.remove('active');
+      uploadBtn.classList.remove('active');
     }
 
     /** @param {string} value */
