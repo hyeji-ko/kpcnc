@@ -427,33 +427,42 @@
         const rec = records.find(r => String(r.id) === id);
         if (!rec) return;
         
-        const input = window.prompt('새 계획시간,실적시간 (소수 1자리까지, 쉼표로 구분):', `${rec.plan},${rec.hours}`);
-        if (input == null) return; // cancel
-        
-        const parts = input.split(',').map(s => s.trim());
-        if (parts.length !== 2) {
-          alert('계획시간과 실적시간을 쉼표로 구분하여 입력하세요.');
-          return;
-        }
-        
-        const [planInput, hoursInput] = parts;
-        const validPattern = /^\d+(?:\.\d)?$/;
-        if (!validPattern.test(planInput) || !validPattern.test(hoursInput)) {
-          alert('숫자만 입력, 소숫점은 1자리까지 가능합니다.');
-          return;
-        }
-        
-        const plan = parseFloat(planInput);
-        const hours = parseFloat(hoursInput);
-        if (!Number.isFinite(plan) || plan < 0 || !Number.isFinite(hours) || hours < 0) {
-          alert('0 이상의 숫자를 입력하세요.');
-          return;
-        }
-        
-        const normalizedPlan = Math.round(plan * 10) / 10;
-        const normalizedHours = Math.round(hours * 10) / 10;
-        
         try {
+          // 해당 행의 input 값 가져오기
+          const tr = target.closest('tr');
+          const planInput = tr.querySelector('.plan-input');
+          const hoursInput = tr.querySelector('.hours-input');
+          
+          if (!planInput || !hoursInput) {
+            showStatusMessage('입력 필드를 찾을 수 없습니다.', 'error');
+            return;
+          }
+          
+          // 입력값 검증
+          const planRaw = planInput.value.trim();
+          const hoursRaw = hoursInput.value.trim();
+          
+          if (!planRaw || !hoursRaw) {
+            showStatusMessage('계획시간과 실적시간을 모두 입력해주세요.', 'error');
+            return;
+          }
+          
+          const validPattern = /^\d+(?:\.\d)?$/;
+          if (!validPattern.test(planRaw) || !validPattern.test(hoursRaw)) {
+            showStatusMessage('숫자만 입력, 소숫점은 1자리까지 가능합니다.', 'error');
+            return;
+          }
+          
+          const plan = parseFloat(planRaw);
+          const hours = parseFloat(hoursRaw);
+          if (!Number.isFinite(plan) || plan < 0 || !Number.isFinite(hours) || hours < 0) {
+            showStatusMessage('0 이상의 숫자를 입력하세요.', 'error');
+            return;
+          }
+          
+          const normalizedPlan = Math.round(plan * 10) / 10;
+          const normalizedHours = Math.round(hours * 10) / 10;
+          
           // 누적값 재계산
           const allRecords = await DB.loadRecords();
           const otherRecords = allRecords.filter(r => String(r.id) !== id);
@@ -1008,9 +1017,13 @@ Firebase 초기화에 실패했습니다. (${deviceType})
             if (e.target.checked) {
               selectedIds.add(id);
               tr.setAttribute('data-selected', 'true');
+              // 체크박스 선택 시 해당 행의 계획, 실적을 편집 가능하게 만들기
+              makeRowEditable(tr, rec);
             } else {
               selectedIds.delete(id);
               tr.removeAttribute('data-selected');
+              // 체크박스 해제 시 편집 모드 해제
+              makeRowNonEditable(tr, rec);
             }
             // 액션 버튼 토글
             toggleActionButtons(tr, e.target.checked, id);
@@ -1025,7 +1038,27 @@ Firebase 초기화에 실패했습니다. (${deviceType})
 
         // plan
         const tdPlan = document.createElement("td");
-        tdPlan.textContent = formatHours(rec.plan);
+        const planInput = document.createElement("input");
+        planInput.type = "text";
+        planInput.value = formatHours(rec.plan);
+        planInput.disabled = true; // 기본적으로 비활성화
+        planInput.className = "plan-input";
+        planInput.style.width = "60px";
+        planInput.style.textAlign = "center";
+        planInput.style.border = "1px solid #ccc";
+        planInput.style.borderRadius = "4px";
+        planInput.style.padding = "2px 4px";
+        planInput.style.backgroundColor = "#f3f4f6";
+        // input 이벤트 리스너 추가
+        planInput.addEventListener("input", (e) => {
+          const sanitized = sanitizeHoursInput(e.target.value);
+          if (e.target.value !== sanitized) {
+            const pos = e.target.selectionStart || sanitized.length;
+            e.target.value = sanitized;
+            e.target.setSelectionRange(pos, pos);
+          }
+        });
+        tdPlan.appendChild(planInput);
 
         // plan cumulative
         const tdPlanCum = document.createElement("td");
@@ -1033,7 +1066,27 @@ Firebase 초기화에 실패했습니다. (${deviceType})
 
         // hours
         const tdHours = document.createElement("td");
-        tdHours.textContent = formatHours(rec.hours);
+        const hoursInput = document.createElement("input");
+        hoursInput.type = "text";
+        hoursInput.value = formatHours(rec.hours);
+        hoursInput.disabled = true; // 기본적으로 비활성화
+        hoursInput.className = "hours-input";
+        hoursInput.style.width = "60px";
+        hoursInput.style.textAlign = "center";
+        hoursInput.style.border = "1px solid #ccc";
+        hoursInput.style.borderRadius = "4px";
+        hoursInput.style.padding = "2px 4px";
+        hoursInput.style.backgroundColor = "#f3f4f6";
+        // input 이벤트 리스너 추가
+        hoursInput.addEventListener("input", (e) => {
+          const sanitized = sanitizeHoursInput(e.target.value);
+          if (e.target.value !== sanitized) {
+            const pos = e.target.selectionStart || sanitized.length;
+            e.target.value = sanitized;
+            e.target.setSelectionRange(pos, pos);
+          }
+        });
+        tdHours.appendChild(hoursInput);
 
         // hours cumulative
         const tdHoursCum = document.createElement("td");
@@ -1170,6 +1223,29 @@ Firebase 초기화에 실패했습니다. (${deviceType})
       // 체크박스 선택 상태 초기화
       selectedIds.clear();
       
+      // 모든 행의 편집 모드 해제
+      const allRows = tbody.querySelectorAll('tr');
+      allRows.forEach(row => {
+        if (row.hasAttribute('data-selected')) {
+          row.removeAttribute('data-selected');
+        }
+        // 편집 모드 해제
+        const planInput = row.querySelector('.plan-input');
+        const hoursInput = row.querySelector('.hours-input');
+        if (planInput) {
+          planInput.disabled = true;
+          planInput.classList.remove('editable-input');
+          planInput.style.backgroundColor = '#f3f4f6';
+          planInput.style.borderColor = '#ccc';
+        }
+        if (hoursInput) {
+          hoursInput.disabled = true;
+          hoursInput.classList.remove('editable-input');
+          hoursInput.style.backgroundColor = '#f3f4f6';
+          hoursInput.style.borderColor = '#ccc';
+        }
+      });
+      
       // 데이터 새로고침 (현재일자 페이지로 이동)
       await renderGrid(false);
       
@@ -1211,6 +1287,52 @@ Firebase 초기화에 실패했습니다. (${deviceType})
           
           actionsTd.append(editBtn, delBtn);
         }
+      }
+    }
+
+    /**
+     * 행을 편집 가능하게 만드는 함수
+     * @param {HTMLElement} tr - 테이블 행 요소
+     * @param {StudyRecord} rec - 레코드 객체
+     */
+    function makeRowEditable(tr, rec) {
+      const planInput = tr.querySelector('.plan-input');
+      const hoursInput = tr.querySelector('.hours-input');
+
+      if (planInput) {
+        planInput.disabled = false;
+        planInput.classList.add('editable-input');
+        planInput.style.backgroundColor = '#ffffff';
+        planInput.style.borderColor = '#3b82f6';
+      }
+      if (hoursInput) {
+        hoursInput.disabled = false;
+        hoursInput.classList.add('editable-input');
+        hoursInput.style.backgroundColor = '#ffffff';
+        hoursInput.style.borderColor = '#3b82f6';
+      }
+    }
+
+    /**
+     * 행을 편집 불가능하게 만드는 함수
+     * @param {HTMLElement} tr - 테이블 행 요소
+     * @param {StudyRecord} rec - 레코드 객체
+     */
+    function makeRowNonEditable(tr, rec) {
+      const planInput = tr.querySelector('.plan-input');
+      const hoursInput = tr.querySelector('.hours-input');
+
+      if (planInput) {
+        planInput.disabled = true;
+        planInput.classList.remove('editable-input');
+        planInput.style.backgroundColor = '#f3f4f6';
+        planInput.style.borderColor = '#ccc';
+      }
+      if (hoursInput) {
+        hoursInput.disabled = true;
+        hoursInput.classList.remove('editable-input');
+        hoursInput.style.backgroundColor = '#f3f4f6';
+        hoursInput.style.borderColor = '#ccc';
       }
     }
   });
