@@ -370,6 +370,15 @@
         console.log('Firebase DB 초기화 시작...');
         await DB.init();
         console.log('Firebase DB 초기화 완료');
+        
+        // DB 상태 표시
+        if (DB.isRemote) {
+          console.log('✅ Firebase 원격 DB 사용 중');
+          showStatusMessage('Firebase 원격 DB에 연결되었습니다.', 'success');
+        } else {
+          console.log('⚠️ 로컬 스토리지 사용 중');
+          showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
+        }
       }
     } catch (e) {
       console.error("Firebase DB 초기화 실패:", e);
@@ -390,6 +399,7 @@ Firebase 초기화에 실패했습니다.
       
       // 에러가 발생해도 앱은 계속 실행되도록 함
       console.warn('Firebase 초기화 실패로 인해 앱이 제한된 기능으로 실행됩니다.');
+      showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
     }
 
     // Init view: show grid by default
@@ -884,5 +894,55 @@ Firebase 초기화에 실패했습니다.
     }
   });
 })();
+
+/** 상태 메시지 표시 함수 */
+function showStatusMessage(message, type = 'info') {
+  // 기존 상태 메시지 제거
+  const existingStatus = document.querySelector('.status-message');
+  if (existingStatus) {
+    existingStatus.remove();
+  }
+  
+  // 새 상태 메시지 생성
+  const statusDiv = document.createElement('div');
+  statusDiv.className = `status-message status-${type}`;
+  statusDiv.textContent = message;
+  
+  // 스타일 적용
+  statusDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    max-width: 300px;
+    word-wrap: break-word;
+  `;
+  
+  // 타입별 색상
+  if (type === 'success') {
+    statusDiv.style.backgroundColor = '#10b981';
+  } else if (type === 'warning') {
+    statusDiv.style.backgroundColor = '#f59e0b';
+  } else if (type === 'error') {
+    statusDiv.style.backgroundColor = '#ef4444';
+  } else {
+    statusDiv.style.backgroundColor = '#3b82f6';
+  }
+  
+  // 페이지에 추가
+  document.body.appendChild(statusDiv);
+  
+  // 5초 후 자동 제거
+  setTimeout(() => {
+    if (statusDiv.parentNode) {
+      statusDiv.remove();
+    }
+  }, 5000);
+}
 
 
