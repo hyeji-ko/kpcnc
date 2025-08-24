@@ -368,6 +368,18 @@
     try {
       if (typeof DB.init === "function") {
         console.log('Firebase DB 초기화 시작...');
+        
+        // Firebase가 이미 초기화되었는지 확인
+        if (window.FIREBASE_INITIALIZED) {
+          console.log('Firebase가 이미 초기화되어 있습니다.');
+        } else {
+          console.log('Firebase 초기화를 시도합니다...');
+          const firebaseInitialized = await window.initializeFirebase();
+          if (!firebaseInitialized) {
+            console.warn('Firebase 초기화에 실패했습니다.');
+          }
+        }
+        
         await DB.init();
         console.log('Firebase DB 초기화 완료');
         
