@@ -69,6 +69,7 @@
         <div class="brand">학습시간 관리</div>
         <div class="actions">
           <button id="uploadBtn" class="btn">업로드</button>
+          <button id="downloadBtn" class="btn">다운로드</button>
           <button id="batchDeleteBtn" class="btn">일괄삭제</button>
           <button id="registerBtn" class="btn">등록</button>
           <button id="listBtn" class="btn">조회</button>
@@ -77,20 +78,68 @@
     </header>
 
     <main class="app-main">
-      <section id="uploadSection" class="card hidden" aria-labelledby="uploadBtn">
+      <!-- Upload Section -->
+      <section id="uploadSection" class="card hidden">
         <h2 class="card-title">CSV 파일 업로드</h2>
-        <form id="uploadForm" novalidate>
+        <form id="uploadForm">
           <div class="form-row">
-            <label for="csvFileInput">CSV 파일 선택</label>
-            <input id="csvFileInput" name="csvFile" type="file" accept=".csv" required />
-            <div class="help-text">학습일자, 계획, 계획누적, 실적, 실적누적, 실적% 형식의 CSV 파일</div>
+            <label for="csvFileInput">CSV 파일:</label>
+            <input type="file" id="csvFileInput" accept=".csv" required>
           </div>
-          <div class="form-actions">
-            <button class="btn primary" type="submit">업로드</button>
-            <button class="btn" type="reset">초기화</button>
+          <div class="form-row">
+            <div class="help-text">
+              CSV 파일 형식: 학습일자, 계획, 계획누적, 실적, 실적누적, 실적%<br>
+              헤더 행은 자동으로 건너뜁니다.
+            </div>
           </div>
-          <p id="uploadMessage" class="form-message" role="alert" aria-live="polite"></p>
+          <div id="uploadMessage" class="form-message"></div>
         </form>
+      </section>
+
+      <!-- Download Section -->
+      <section id="downloadSection" class="card hidden">
+        <h2 class="card-title">데이터 다운로드</h2>
+        <div class="download-options">
+          <div class="form-row">
+            <label>다운로드 형식:</label>
+            <div class="format-buttons">
+              <button type="button" class="format-btn" data-format="docx">
+                <span class="format-icon">📄</span>
+                Microsoft Word (.docx)
+              </button>
+              <button type="button" class="format-btn" data-format="pdf">
+                <span class="format-icon">📋</span>
+                PDF 문서 (.pdf)
+              </button>
+              <button type="button" class="format-btn" data-format="txt">
+                <span class="format-icon">📝</span>
+                일반 텍스트 (.txt)
+              </button>
+              <button type="button" class="format-btn" data-format="csv">
+                <span class="format-icon">📊</span>
+                CSV 파일 (.csv)
+              </button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>데이터 범위:</label>
+            <div class="range-options">
+              <label class="radio-option">
+                <input type="radio" name="downloadRange" value="current" checked>
+                <span>현재 선택된 년월</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="downloadRange" value="all">
+                <span>전체 데이터</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>파일명:</label>
+            <input type="text" id="downloadFilename" value="학습시간_데이터" placeholder="파일명을 입력하세요">
+          </div>
+          <div id="downloadMessage" class="form-message"></div>
+        </div>
       </section>
 
       <section id="formSection" class="card hidden" aria-labelledby="registerBtn">
