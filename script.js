@@ -367,12 +367,29 @@
     // Now perform async init and first render safely
     try {
       if (typeof DB.init === "function") {
+        console.log('Firebase DB 초기화 시작...');
         await DB.init();
+        console.log('Firebase DB 초기화 완료');
       }
     } catch (e) {
       console.error("Firebase DB 초기화 실패:", e);
-      alert(`Firebase 초기화 실패: ${e.message}\n\nconfig.js 파일의 Firebase 설정을 확인해주세요.`);
-      return;
+      
+      // 사용자에게 친화적인 에러 메시지 표시
+      const errorMessage = `
+Firebase 초기화에 실패했습니다.
+
+가능한 원인:
+1. 인터넷 연결 확인
+2. Firebase 프로젝트 설정 확인
+3. 브라우저 캐시 삭제 후 재시도
+
+에러 상세: ${e.message}
+      `;
+      
+      alert(errorMessage);
+      
+      // 에러가 발생해도 앱은 계속 실행되도록 함
+      console.warn('Firebase 초기화 실패로 인해 앱이 제한된 기능으로 실행됩니다.');
     }
 
     // Init view: show grid by default
