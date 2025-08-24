@@ -104,6 +104,18 @@ async function getRemoteImpl() {
       console.log('Firestore 설정이 이미 적용되어 있습니다.');
     }
     
+    // 연결 상태 확인
+    try {
+      const connectionTest = await window.testFirebaseConnection();
+      if (!connectionTest.success) {
+        console.warn('Firebase 연결 테스트 실패:', connectionTest.error);
+      } else {
+        console.log('Firebase 연결 테스트 성공');
+      }
+    } catch (testError) {
+      console.warn('연결 테스트 중 오류:', testError.message);
+    }
+    
     // 익명 인증 시도
     console.log('익명 인증 시도...');
     const auth = firebase.auth();
@@ -124,12 +136,17 @@ async function getRemoteImpl() {
     
     console.log('Firestore 컬렉션 경로 설정됨:', `users/${userId}/records`);
     
-    // 연결 테스트
+    // 컬렉션 연결 테스트 (더 안전한 방법)
     try {
-      await recordsCollection.limit(1).get();
+      const testSnapshot = await recordsCollection.limit(1).get();
       console.log('Firestore 컬렉션 연결 테스트 성공');
     } catch (testError) {
       console.warn('컬렉션 연결 테스트 실패 (정상적일 수 있음):', testError.message);
+      
+      // 오류가 심각한 경우 로컬 스토리지로 폴백
+      if (testError.code === 'permission-denied' || testError.code === 'unavailable') {
+        throw new Error(`Firestore 접근 권한 없음: ${testError.message}`);
+      }
     }
     
     return {
