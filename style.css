@@ -268,32 +268,66 @@ input[type="text"] {
   color: var(--muted);
 }
 
-.table-wrap {
-  overflow: auto;
-}
-
-table.data-table {
+/* Table styles */
+.data-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 0.9rem;
 }
 
 .data-table th,
 .data-table td {
+  padding: 0.75rem 0.5rem;
   text-align: left;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.data-table thead th {
+.data-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
   position: sticky;
   top: 0;
-  background: #0f1520;
-  z-index: 1;
+  z-index: 10;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.data-table td:first-child {
+  width: 40px;
+  text-align: center;
+}
+
+.data-table td:nth-child(2) {
+  min-width: 120px;
+}
+
+.data-table td:nth-child(3),
+.data-table td:nth-child(4),
+.data-table td:nth-child(5),
+.data-table td:nth-child(6) {
+  min-width: 80px;
+  text-align: right;
+}
+
+.data-table td:nth-child(7) {
+  min-width: 60px;
+  text-align: right;
+}
+
+.data-table td:last-child {
+  width: 160px;
+  text-align: center;
 }
 
 .empty-row td {
-  color: var(--muted);
   text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 2rem;
 }
 
 .pagination-nav {
@@ -324,5 +358,41 @@ table.data-table {
 .pagination-btn:disabled:hover,
 .pagination-btn.disabled:hover {
   filter: none;
+}
+
+/* Table wrapper */
+.table-wrap {
+  overflow: auto;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+/* Upload section */
+#uploadSection {
+  max-width: 600px;
+}
+
+#uploadSection .form-row {
+  margin-bottom: 1.5rem;
+}
+
+#uploadSection input[type="file"] {
+  padding: 0.75rem;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#uploadSection input[type="file"]:hover {
+  border-color: #9ca3af;
+  background-color: #f3f4f6;
+}
+
+#uploadSection input[type="file"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
