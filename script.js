@@ -1660,77 +1660,79 @@ ${htmlContent}
        showDownloadMessage('HTML 파일로 다운로드되었습니다. Word에서 열거나 브라우저에서 인쇄하여 사용하세요.', false);
      }
 
-    // PDF 다운로드 (실제 PDF 형식)
-    async function downloadPDF(records, filename) {
-      try {
-        // jsPDF 라이브러리 사용하여 실제 PDF 생성
-        if (typeof window.jsPDF === 'undefined') {
-          // jsPDF가 로드되지 않은 경우 HTML 기반으로 대체
-          await downloadPDFFallback(records, filename);
-          return;
-        }
-        
-        const { jsPDF } = window.jsPDF;
-        const doc = new jsPDF();
-        
-        // 제목 추가
-        doc.setFontSize(20);
-        doc.text('학습시간 기록', 105, 20, { align: 'center' });
-        
-        // 테이블 헤더
-        const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
-        const columnWidths = [30, 25, 25, 25, 25, 25];
-        
-        let yPosition = 40;
-        
-        // 헤더 그리기
-        doc.setFontSize(12);
-        doc.setFillColor(240, 240, 240);
-        let xPosition = 20;
-        
-        headers.forEach((header, index) => {
-          doc.rect(xPosition, yPosition - 8, columnWidths[index], 10, 'F');
-          doc.text(header, xPosition + 2, yPosition - 1);
-          xPosition += columnWidths[index];
-        });
-        
-        yPosition += 15;
-        
-        // 데이터 행 그리기
-        doc.setFontSize(10);
-        records.forEach((record, rowIndex) => {
-          if (yPosition > 280) {
-            doc.addPage();
-            yPosition = 20;
-          }
-          
-          xPosition = 20;
-          const rowData = [
-            record.date,
-            record.plan.toString(),
-            record.hours.toString(),
-            record.planCumulative.toString(),
-            record.hoursCumulative.toString(),
-            record.percentage.toString() + '%'
-          ];
-          
-          rowData.forEach((cell, index) => {
-            doc.text(cell, xPosition + 2, yPosition);
-            xPosition += columnWidths[index];
-          });
-          
-          yPosition += 8;
-        });
-        
-        // PDF 파일 다운로드
-        doc.save(`${filename}.pdf`);
-        
-      } catch (error) {
-        console.error('PDF 생성 실패:', error);
-        // 실패 시 HTML 기반으로 대체
-        await downloadPDFFallback(records, filename);
-      }
+// PDF 다운로드 (실제 PDF 형식)
+async function downloadPDF(records, filename) {
+  try {
+    // jsPDF 라이브러리 사용하여 실제 PDF 생성
+    if (typeof window.jsPDF === 'undefined') {
+      console.warn('jsPDF가 로드되지 않았습니다. HTML 기반으로 대체합니다.');
+      await downloadPDFFallback(records, filename);
+      return;
     }
+    
+    const doc = new window.jsPDF();
+    
+    // 제목 추가
+    doc.setFontSize(20);
+    doc.text('학습시간 기록', 105, 20, { align: 'center' });
+    
+    // 테이블 헤더
+    const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+    const columnWidths = [30, 25, 25, 25, 25, 25];
+    
+    let yPosition = 40;
+    
+    // 헤더 그리기
+    doc.setFontSize(12);
+    doc.setFillColor(240, 240, 240);
+    let xPosition = 20;
+    
+    headers.forEach((header, index) => {
+      doc.rect(xPosition, yPosition - 8, columnWidths[index], 10, 'F');
+      doc.text(header, xPosition + 2, yPosition - 1);
+      xPosition += columnWidths[index];
+    });
+    
+    yPosition += 15;
+    
+    // 데이터 행 그리기
+    doc.setFontSize(10);
+    records.forEach((record, rowIndex) => {
+      if (yPosition > 280) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      xPosition = 20;
+      const rowData = [
+        record.date,
+        record.plan.toString(),
+        record.hours.toString(),
+        record.planCumulative.toString(),
+        record.hoursCumulative.toString(),
+        record.percentage.toString() + '%'
+      ];
+      
+      rowData.forEach((cell, index) => {
+        doc.text(cell, xPosition + 2, yPosition);
+        xPosition += columnWidths[index];
+      });
+      
+      yPosition += 8;
+    });
+    
+    // PDF 파일 다운로드
+    doc.save(`${filename}.pdf`);
+    
+    // 성공 메시지 표시
+    showDownloadMessage('PDF 파일이 성공적으로 생성되었습니다.');
+    
+  } catch (error) {
+    console.error('PDF 생성 실패:', error);
+    // 실패 시 HTML 기반으로 대체
+    await downloadPDFFallback(records, filename);
+  }
+}
     
     // PDF 생성 실패 시 HTML 기반 대체 다운로드
     async function downloadPDFFallback(records, filename) {
