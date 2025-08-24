@@ -1580,50 +1580,16 @@ Firebase 초기화에 실패했습니다.
          
          const doc = new window.jsPDF();
          
-         // 한글 폰트 처리 - 여러 폰트 시도
-         let title, headers;
-         let fontLoaded = false;
+                   // 한글 폰트 처리 - 기본 폰트 사용으로 단순화
+          let title, headers;
+          
+          // 기본 폰트 설정 (한글 지원이 제한적이지만 안정적)
+          doc.setFont('helvetica');
+          console.log('기본 폰트 helvetica 사용');
          
-         // 한글 폰트 목록 (우선순위 순)
-         const fontUrls = [
-           'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.woff2',
-           'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRA.woff2',
-           'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2'
-         ];
-         
-         for (const fontUrl of fontUrls) {
-           try {
-             console.log('폰트 다운로드 시도:', fontUrl);
-             const fontResponse = await fetch(fontUrl);
-             if (!fontResponse.ok) {
-               throw new Error('폰트 다운로드 실패');
-             }
-             
-             const fontArrayBuffer = await fontResponse.arrayBuffer();
-             const fontName = fontUrl.includes('notosanskr') ? 'NotoSansKR' : 
-                            fontUrl.includes('notosans') ? 'NotoSans' : 'Roboto';
-             
-             // jsPDF에 폰트 추가
-             doc.addFont(fontArrayBuffer, fontName, 'normal');
-             doc.setFont(fontName);
-             
-             console.log('폰트 등록 성공:', fontName);
-             fontLoaded = true;
-             break;
-           } catch (error) {
-             console.warn('폰트 다운로드 실패:', fontUrl, error);
-             continue;
-           }
-         }
-         
-         if (!fontLoaded) {
-           console.warn('모든 폰트 다운로드 실패, 기본 폰트 사용');
-           doc.setFont('helvetica');
-         }
-         
-         // 한글로 제목과 헤더 설정 (폰트가 로드되었든 안되었든)
-         title = '학습시간 기록';
-         headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+                   // 영어로 제목과 헤더 설정 (기본 폰트에서 안정적으로 표시)
+          title = 'Study Time Records';
+          headers = ['Date', 'Plan', 'Actual', 'Plan Cum.', 'Actual Cum.', 'Rate'];
          
          // 제목 추가
          doc.setFontSize(20);
@@ -1650,32 +1616,48 @@ Firebase 초기화에 실패했습니다.
          
          yPosition += 15;
          
-         // 데이터 행 그리기
-         doc.setFontSize(10);
-         doc.setTextColor(0, 0, 0); // 데이터 텍스트는 검은색
-         records.forEach((record, rowIndex) => {
-           if (yPosition > 280) {
-             doc.addPage();
-             yPosition = 20;
-           }
-           
-           xPosition = 20;
-           const rowData = [
-             record.date,
-             record.plan.toString(),
-             record.hours.toString(),
-             record.planCumulative.toString(),
-             record.hoursCumulative.toString(),
-             record.percentage.toString() + '%'
-           ];
-           
-           rowData.forEach((cell, index) => {
-             doc.text(cell, xPosition + 2, yPosition);
-             xPosition += columnWidths[index];
-           });
-           
-           yPosition += 8;
-         });
+                   // 데이터 행 그리기 - 안전한 텍스트 렌더링
+          doc.setFontSize(10);
+          doc.setTextColor(0, 0, 0); // 데이터 텍스트는 검은색
+          
+          for (let rowIndex = 0; rowIndex < records.length; rowIndex++) {
+            const record = records[rowIndex];
+            
+            // 페이지 넘침 체크
+            if (yPosition > 280) {
+              doc.addPage();
+              yPosition = 20;
+            }
+            
+            xPosition = 20;
+            
+            // 데이터를 안전하게 문자열로 변환
+            const rowData = [
+              String(record.date || ''),
+              String(record.plan || 0),
+              String(record.hours || 0),
+              String(record.planCumulative || 0),
+              String(record.hoursCumulative || 0),
+              String(record.percentage || 0) + '%'
+            ];
+            
+            // 각 셀을 개별적으로 렌더링하여 오류 방지
+            for (let cellIndex = 0; cellIndex < rowData.length; cellIndex++) {
+              try {
+                const cellText = rowData[cellIndex];
+                if (cellText && cellText.trim()) {
+                  doc.text(cellText, xPosition + 2, yPosition);
+                }
+              } catch (cellError) {
+                console.warn(`셀 렌더링 오류 (${rowIndex}, ${cellIndex}):`, cellError);
+                // 오류 발생 시 빈 텍스트로 대체
+                doc.text('', xPosition + 2, yPosition);
+              }
+              xPosition += columnWidths[cellIndex];
+            }
+            
+            yPosition += 8;
+          }
          
          // PDF 파일 다운로드
          doc.save(`${filename}.pdf`);
@@ -1683,11 +1665,12 @@ Firebase 초기화에 실패했습니다.
          // 성공 메시지 표시
          showDownloadMessage('PDF 파일이 성공적으로 생성되었습니다.');
          
-       } catch (error) {
-         console.error('PDF 생성 실패:', error);
-         // 실패 시 HTML 기반으로 대체
-         await downloadPDFFallback(records, filename);
-       }
+               } catch (error) {
+          console.error('PDF 생성 실패:', error);
+          console.log('HTML 기반 대체 다운로드로 전환합니다.');
+          // 실패 시 HTML 기반으로 대체
+          await downloadPDFFallback(records, filename);
+        }
      }
     
          // PDF 생성 실패 시 HTML 기반 대체 다운로드
@@ -1735,7 +1718,7 @@ h1 {
 </style>
 </head>
 <body>
-<h1>학습시간 기록</h1>
+ <h1>Study Time Records</h1>
 ${htmlContent}
 <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
   <p>생성일시: ${new Date().toLocaleString('ko-KR')}</p>
@@ -1759,9 +1742,9 @@ ${htmlContent}
       showDownloadMessage('PDF 생성 실패. HTML 파일로 다운로드되었습니다. 브라우저에서 인쇄하여 PDF로 저장하세요.', true);
     }
 
-    // HTML 테이블 생성
-    function generateHTMLTable(records) {
-      const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+         // HTML 테이블 생성
+     function generateHTMLTable(records) {
+       const headers = ['Date', 'Plan', 'Actual', 'Plan Cum.', 'Actual Cum.', 'Rate'];
       const rows = records.map(rec => [
         rec.date,
         rec.plan,
