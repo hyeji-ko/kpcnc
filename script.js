@@ -144,13 +144,15 @@
       listBtn.classList.add('active');
       
       showGrid();
-      currentPage = 0; // 조회 시 첫 페이지로 이동
       
       // 항상 현재 년월로 설정
       const now = new Date();
       selectedYear = now.getFullYear();
       selectedMonth = now.getMonth() + 1;
       updateMonthDisplay();
+      
+      // 현재일자 페이지로 이동하기 위해 currentPage를 -1로 설정 (renderGrid에서 자동 계산)
+      currentPage = -1;
       
       await renderGrid();
     });
@@ -232,7 +234,7 @@
         selectedMonth = month;
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
-        currentPage = 0; // 선택 시 첫 페이지로 이동
+        currentPage = -1; // 선택 시 현재일자 페이지로 이동
         renderGrid();
       });
     });
@@ -246,7 +248,7 @@
         updateCalendarDisplay();
         updateMonthDisplay();
         monthCalendar.classList.add("hidden");
-        currentPage = 0; // 선택 시 첫 페이지로 이동
+        currentPage = -1; // 선택 시 현재일자 페이지로 이동
         renderGrid();
       });
     });
@@ -538,6 +540,9 @@ Firebase 초기화에 실패했습니다.
     uploadBtn.disabled = false;
     batchDeleteBtn.disabled = false;
     
+    // 초기 로드 시 현재일자 페이지로 이동하기 위해 currentPage를 -1로 설정
+    currentPage = -1;
+    
     try {
       await renderGrid();
     } catch (e) {
@@ -803,11 +808,24 @@ Firebase 초기화에 실패했습니다.
         return;
       }
 
-      // Sort by date asc for display (현재일자가 첫 번째로 표시)
-      const sorted = [...filteredRecords].sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+      // Sort by date desc for display (최신일자가 첫 번째로 표시)
+      const sorted = [...filteredRecords].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
       // 7일 단위로 페이지 계산
       const totalPages = Math.ceil(sorted.length / pageSize);
+      
+      // 현재일자가 첫 번째 행에 표시되도록 페이지 계산
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD 형식
+      const todayIndex = sorted.findIndex(record => record.date === today);
+      
+      if (todayIndex !== -1) {
+        // 현재일자가 데이터에 있으면 해당 페이지로 설정
+        currentPage = Math.floor(todayIndex / pageSize);
+      } else {
+        // 현재일자가 데이터에 없으면 첫 페이지로 설정
+        currentPage = 0;
+      }
+      
       const startIndex = currentPage * pageSize;
       const endIndex = Math.min(startIndex + pageSize, sorted.length);
       const pageRecords = sorted.slice(startIndex, endIndex);
