@@ -1528,17 +1528,14 @@ Firebase 초기화에 실패했습니다.
         // 파일명 가져오기
         const filename = document.getElementById('downloadFilename').value.trim() || '학습시간_데이터';
         
-        // 형식별 다운로드 처리
-        switch (format) {
-          case 'csv':
-            await downloadCSV(sortedRecords, filename);
-            break;
-          case 'pdf':
-            await downloadPDF(sortedRecords, filename);
-            break;
-          default:
-            throw new Error('지원하지 않는 파일 형식입니다.');
-        }
+                 // 형식별 다운로드 처리
+         switch (format) {
+           case 'csv':
+             await downloadCSV(sortedRecords, filename);
+             break;
+           default:
+             throw new Error('지원하지 않는 파일 형식입니다.');
+         }
         
         progressModal.remove();
         showDownloadMessage(`${format.toUpperCase()} 파일 다운로드가 완료되었습니다.`);
@@ -1568,201 +1565,7 @@ Firebase 초기화에 실패했습니다.
       downloadBlob(blob, `${filename}.csv`);
     }
 
-         // PDF 다운로드 (실제 PDF 형식)
-     async function downloadPDF(records, filename) {
-       try {
-         // jsPDF 라이브러리 사용하여 실제 PDF 생성
-         if (typeof window.jsPDF === 'undefined') {
-           console.warn('jsPDF가 로드되지 않았습니다. HTML 기반으로 대체합니다.');
-           await downloadPDFFallback(records, filename);
-           return;
-         }
-         
-         const doc = new window.jsPDF();
-         
-                   // 한글 폰트 처리 - 기본 폰트 사용으로 단순화
-          let title, headers;
-          
-          // 기본 폰트 설정 (한글 지원이 제한적이지만 안정적)
-          doc.setFont('helvetica');
-          console.log('기본 폰트 helvetica 사용');
-         
-                   // 영어로 제목과 헤더 설정 (기본 폰트에서 안정적으로 표시)
-          title = 'Study Time Records';
-          headers = ['Date', 'Plan', 'Actual', 'Plan Cum.', 'Actual Cum.', 'Rate'];
-         
-         // 제목 추가
-         doc.setFontSize(20);
-         doc.text(title, 105, 20, { align: 'center' });
-         
-         // 테이블 헤더
-         const columnWidths = [30, 25, 25, 25, 25, 25];
-         
-         let yPosition = 40;
-         
-         // 헤더 그리기 - 밝은 배경색으로 변경
-         doc.setFontSize(12);
-         doc.setFillColor(245, 245, 245); // 매우 밝은 회색
-         doc.setTextColor(0, 0, 0); // 검은색 텍스트
-         let xPosition = 20;
-         
-         headers.forEach((header, index) => {
-           // 헤더 배경 그리기
-           doc.rect(xPosition, yPosition - 8, columnWidths[index], 10, 'F');
-           // 헤더 텍스트 그리기
-           doc.text(header, xPosition + 2, yPosition - 1);
-           xPosition += columnWidths[index];
-         });
-         
-         yPosition += 15;
-         
-                   // 데이터 행 그리기 - 안전한 텍스트 렌더링
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0); // 데이터 텍스트는 검은색
-          
-          for (let rowIndex = 0; rowIndex < records.length; rowIndex++) {
-            const record = records[rowIndex];
-            
-            // 페이지 넘침 체크
-            if (yPosition > 280) {
-              doc.addPage();
-              yPosition = 20;
-            }
-            
-            xPosition = 20;
-            
-            // 데이터를 안전하게 문자열로 변환
-            const rowData = [
-              String(record.date || ''),
-              String(record.plan || 0),
-              String(record.hours || 0),
-              String(record.planCumulative || 0),
-              String(record.hoursCumulative || 0),
-              String(record.percentage || 0) + '%'
-            ];
-            
-            // 각 셀을 개별적으로 렌더링하여 오류 방지
-            for (let cellIndex = 0; cellIndex < rowData.length; cellIndex++) {
-              try {
-                const cellText = rowData[cellIndex];
-                if (cellText && cellText.trim()) {
-                  doc.text(cellText, xPosition + 2, yPosition);
-                }
-              } catch (cellError) {
-                console.warn(`셀 렌더링 오류 (${rowIndex}, ${cellIndex}):`, cellError);
-                // 오류 발생 시 빈 텍스트로 대체
-                doc.text('', xPosition + 2, yPosition);
-              }
-              xPosition += columnWidths[cellIndex];
-            }
-            
-            yPosition += 8;
-          }
-         
-         // PDF 파일 다운로드
-         doc.save(`${filename}.pdf`);
-         
-         // 성공 메시지 표시
-         showDownloadMessage('PDF 파일이 성공적으로 생성되었습니다.');
-         
-               } catch (error) {
-          console.error('PDF 생성 실패:', error);
-          console.log('HTML 기반 대체 다운로드로 전환합니다.');
-          // 실패 시 HTML 기반으로 대체
-          await downloadPDFFallback(records, filename);
-        }
-     }
     
-         // PDF 생성 실패 시 HTML 기반 대체 다운로드
-     async function downloadPDFFallback(records, filename) {
-       const htmlContent = generateHTMLTable(records);
-       const pdfContent = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>${filename}</title>
-<style>
-body { 
-  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', Arial, sans-serif; 
-  margin: 20px; 
-  line-height: 1.6;
-}
-table { 
-  border-collapse: collapse; 
-  width: 100%; 
-  margin-top: 20px; 
-  font-size: 12px;
-}
-th, td { 
-  border: 1px solid #ddd; 
-  padding: 8px; 
-  text-align: center; 
-  vertical-align: middle;
-}
-th { 
-  background-color: #f2f2f2; 
-  font-weight: bold; 
-  color: #333;
-}
-h1 { 
-  color: #333; 
-  text-align: center; 
-  font-size: 24px;
-  margin-bottom: 30px;
-}
-@media print {
-  body { margin: 0; }
-  table { page-break-inside: auto; }
-  tr { page-break-inside: avoid; page-break-after: auto; }
-}
-</style>
-</head>
-<body>
- <h1>Study Time Records</h1>
-${htmlContent}
-<div style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
-  <p>생성일시: ${new Date().toLocaleString('ko-KR')}</p>
-  <p>총 ${records.length}개 레코드</p>
-</div>
-<script>
-  // 자동 인쇄 다이얼로그 열기 (PDF로 저장 가능)
-  window.onload = function() {
-    setTimeout(function() {
-      window.print();
-    }, 500);
-  };
-</script>
-</body>
-</html>`;
-      
-      const blob = new Blob([pdfContent], { type: 'text/html' });
-      downloadBlob(blob, `${filename}_print.html`);
-      
-      // 사용자에게 안내 메시지 표시
-      showDownloadMessage('PDF 생성 실패. HTML 파일로 다운로드되었습니다. 브라우저에서 인쇄하여 PDF로 저장하세요.', true);
-    }
-
-         // HTML 테이블 생성
-     function generateHTMLTable(records) {
-       const headers = ['Date', 'Plan', 'Actual', 'Plan Cum.', 'Actual Cum.', 'Rate'];
-      const rows = records.map(rec => [
-        rec.date,
-        rec.plan,
-        rec.hours,
-        rec.planCumulative,
-        rec.hoursCumulative,
-        rec.percentage
-      ]);
-      
-      return `<table>
-<thead>
-<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-</thead>
-<tbody>
-${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
-</tbody>
-</table>`;
-    }
 
     // Blob 다운로드 공통 함수
     function downloadBlob(blob, filename) {
