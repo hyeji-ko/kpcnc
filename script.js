@@ -369,14 +369,28 @@
       if (typeof DB.init === "function") {
         console.log('Firebase DB 초기화 시작...');
         
-        // Firebase가 이미 초기화되었는지 확인
-        if (window.FIREBASE_INITIALIZED) {
-          console.log('Firebase가 이미 초기화되어 있습니다.');
-        } else {
-          console.log('Firebase 초기화를 시도합니다...');
-          const firebaseInitialized = await window.initializeFirebase();
-          if (!firebaseInitialized) {
-            console.warn('Firebase 초기화에 실패했습니다.');
+        // Firebase 상태 확인
+        const firebaseStatus = window.checkFirebaseStatus();
+        console.log('Firebase 상태:', firebaseStatus);
+        
+        if (!firebaseStatus.initialized) {
+          console.log('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
+          
+          // Firebase 초기화 대기
+          let attempts = 0;
+          const maxAttempts = 10;
+          
+          while (!firebaseStatus.initialized && attempts < maxAttempts) {
+            console.log(`Firebase 초기화 대기 중... (${attempts + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            attempts++;
+            
+            // 상태 재확인
+            Object.assign(firebaseStatus, window.checkFirebaseStatus());
+          }
+          
+          if (!firebaseStatus.initialized) {
+            console.warn('Firebase 초기화 시간 초과');
           }
         }
         
