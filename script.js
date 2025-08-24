@@ -84,6 +84,10 @@
     // Attach listeners BEFORE any awaits so UI remains responsive
     uploadBtn.addEventListener("click", async () => {
       showUpload();
+      // 파일 선택기가 자동으로 열리도록 CSV 파일 입력 필드 클릭
+      requestAnimationFrame(() => {
+        csvFileInput.click();
+      });
     });
 
     registerBtn.addEventListener("click", async () => {
