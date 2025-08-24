@@ -13,7 +13,10 @@
     
     <!-- PDF 생성 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+    <script>
+      // jsPDF 전역 객체 설정
+      window.jsPDF = window.jspdf.jsPDF;
+    </script>
     <!-- Firebase 초기화 및 설정 -->
     <script src="config.js"></script>
     
