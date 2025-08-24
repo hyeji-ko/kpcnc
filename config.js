@@ -43,10 +43,8 @@ window.initializeFirebase = async function() {
         cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
         experimentalForceLongPolling: true,
         useFetchStreams: false,
-        ignoreUndefinedProperties: true,
-        // 추가 설정으로 WebChannel 오류 방지
-        ssl: true,
-        experimentalAutoDetectLongPolling: true
+        ignoreUndefinedProperties: true
+        // ssl과 experimentalAutoDetectLongPolling 옵션 제거 (Firebase 9.23.0에서 지원하지 않음)
       };
       
       db.settings(settings);
