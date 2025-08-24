@@ -79,9 +79,17 @@ async function getRemoteImpl() {
     
     if (!status.initialized) {
       console.warn('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
+      
+      // Firebase 초기화 시도
       const initialized = await window.initializeFirebase();
       if (!initialized) {
         throw new Error(`Firebase 초기화 실패: ${status.error || '알 수 없는 오류'}`);
+      }
+      
+      // 초기화 후 상태 재확인
+      const newStatus = window.checkFirebaseStatus();
+      if (!newStatus.initialized) {
+        throw new Error('Firebase 초기화 후에도 상태가 업데이트되지 않았습니다.');
       }
     }
     
