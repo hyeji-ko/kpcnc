@@ -70,134 +70,117 @@ let remoteImpl = null;
 let remoteInitAttempted = false;
 
 async function getRemoteImpl() {
-  if (remoteImpl) return remoteImpl;
-  if (remoteInitAttempted) return null;
-  remoteInitAttempted = true;
-
   try {
-    console.log('Firebase 모듈 로딩 시작...');
-    const [{ initializeApp }, { getAuth, signInAnonymously }, { getFirestore, collection, addDoc, getDocs, query, orderBy, updateDoc, deleteDoc, doc }]
-      = await Promise.all([
-        import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
-        import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'),
-        import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'),
-      ]);
-
-    const config = getFirebaseConfig();
-    if (!config) {
-      console.error('Firebase 설정이 없습니다.');
-      return null;
-    }
-
-    console.log('Firebase 설정 확인됨:', config);
-    console.log('Firebase 앱 초기화 시작...');
+    console.log('Firebase 원격 DB 연결 시도...');
     
-    const app = initializeApp(config);
-    console.log('Firebase 앱 초기화 성공');
-    
-    const auth = getAuth(app);
-    console.log('Firebase Auth 초기화 성공');
-    
-    let userCred;
-    try {
-      console.log('익명 인증 시도...');
-      userCred = await signInAnonymously(auth);
-      console.log('Firebase 익명 인증 성공:', userCred.user?.uid);
-    } catch (e) {
-      console.error('Firebase 익명 인증 실패:', e);
-      console.error('에러 코드:', e.code);
-      console.error('에러 메시지:', e.message);
-      
-      // 익명 인증 실패 시 로컬 스토리지로 폴백
-      console.warn('Firebase 익명 인증 실패로 로컬 스토리지를 사용합니다.');
-      return null;
+    // Firebase가 초기화되었는지 확인
+    if (!window.FIREBASE_INITIALIZED) {
+      console.warn('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
+      const initialized = await window.initializeFirebase();
+      if (!initialized) {
+        throw new Error('Firebase 초기화에 실패했습니다.');
+      }
     }
     
-    const uid = userCred.user?.uid || 'anonymous';
-    const db = getFirestore(app);
-    console.log('Firestore 초기화 성공');
-
-    const baseCol = collection(db, 'users', uid, 'records');
-
-    remoteImpl = {
+    // Firebase 앱 인스턴스 확인
+    if (!firebase.apps.length) {
+      console.error('Firebase 앱이 초기화되지 않았습니다.');
+      throw new Error('Firebase 앱이 초기화되지 않았습니다.');
+    }
+    
+    console.log('Firebase 앱 확인됨:', firebase.apps[0].name);
+    
+    // Firestore 인스턴스 가져오기
+    const db = firebase.firestore();
+    console.log('Firestore 인스턴스 생성됨');
+    
+    // Firestore 설정 확인
+    const settings = {
+      cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+      experimentalForceLongPolling: true, // 연결 안정성 향상
+      useFetchStreams: false // WebChannel 대신 Fetch 사용
+    };
+    
+    db.settings(settings);
+    console.log('Firestore 설정 적용됨:', settings);
+    
+    // 익명 인증 시도
+    console.log('익명 인증 시도...');
+    const auth = firebase.auth();
+    const userCredential = await auth.signInAnonymously();
+    const user = userCredential.user;
+    
+    console.log('익명 인증 성공:', user.uid);
+    
+    // 사용자별 컬렉션 경로 설정
+    const userId = user.uid;
+    const recordsCollection = db.collection('users').doc(userId).collection('records');
+    
+    console.log('Firestore 컬렉션 경로 설정됨:', `users/${userId}/records`);
+    
+    return {
       async loadRecords() {
         try {
-          const q = query(baseCol, orderBy('date', 'asc'));
-          const snap = await getDocs(q);
-          const rows = [];
-          snap.forEach((docSnap) => {
-            const d = docSnap.data();
-            rows.push({ 
-              id: docSnap.id, 
-              date: String(d.date), 
-              plan: Number(d.plan || 0),
-              planCumulative: Number(d.planCumulative || 0),
-              hours: Number(d.hours || 0), 
-              hoursCumulative: Number(d.hoursCumulative || 0),
-              percentage: Number(d.percentage || 0)
+          console.log('Firestore에서 레코드 로드 시도...');
+          const snapshot = await recordsCollection.orderBy('date', 'desc').get();
+          const records = [];
+          snapshot.forEach(doc => {
+            records.push({
+              id: doc.id,
+              ...doc.data()
             });
           });
-          console.log('Firebase에서 데이터 로드됨:', rows.length, '개 항목');
-          return rows;
-        } catch (e) {
-          console.error('Firebase에서 데이터 로드 실패:', e);
-          throw e;
+          console.log(`${records.length}개의 레코드를 Firestore에서 로드했습니다.`);
+          return records;
+        } catch (error) {
+          console.error('Firestore 레코드 로드 실패:', error);
+          throw new Error(`Firestore 데이터 로드 실패: ${error.message}`);
         }
       },
+      
       async addRecord(record) {
         try {
-          const ref = await addDoc(baseCol, {
-            date: record.date,
-            plan: Number(record.plan || 0),
-            planCumulative: Number(record.planCumulative || 0),
-            hours: Number(record.hours || 0),
-            hoursCumulative: Number(record.hoursCumulative || 0),
-            percentage: Number(record.percentage || 0),
-            createdAt: Date.now(),
-          });
-          console.log('Firebase에 새 레코드 추가됨:', ref.id, record);
-          return ref.id;
-        } catch (e) {
-          console.error('Firebase에 레코드 추가 실패:', e);
-          throw e;
+          console.log('Firestore에 레코드 추가 시도...');
+          const docRef = await recordsCollection.add(record);
+          console.log('Firestore에 레코드 추가 성공:', docRef.id);
+          return docRef.id;
+        } catch (error) {
+          console.error('Firestore 레코드 추가 실패:', error);
+          throw new Error(`Firestore 데이터 추가 실패: ${error.message}`);
         }
       },
+      
       async updateRecord(id, patch) {
         try {
-          const ref = doc(db, 'users', uid, 'records', id);
-          await updateDoc(ref, { ...patch });
-          console.log('Firebase에서 레코드 업데이트됨:', id, patch);
-          return true;
-        } catch (e) {
-          console.error('Firebase에서 레코드 업데이트 실패:', e);
-          throw e;
+          console.log('Firestore 레코드 업데이트 시도...');
+          await recordsCollection.doc(id).update(patch);
+          console.log('Firestore 레코드 업데이트 성공:', id);
+        } catch (error) {
+          console.error('Firestore 레코드 업데이트 실패:', error);
+          throw new Error(`Firestore 데이터 업데이트 실패: ${error.message}`);
         }
       },
+      
       async deleteRecord(id) {
         try {
-          const ref = doc(db, 'users', uid, 'records', id);
-          await deleteDoc(ref);
-          console.log('Firebase에서 레코드 삭제됨:', id);
-          return true;
-        } catch (e) {
-          console.error('Firebase에서 레코드 삭제 실패:', e);
-          throw e;
+          console.log('Firestore 레코드 삭제 시도...');
+          await recordsCollection.doc(id).delete();
+          console.log('Firestore 레코드 삭제 성공:', id);
+        } catch (error) {
+          console.error('Firestore 레코드 삭제 실패:', error);
+          throw new Error(`Firestore 데이터 삭제 실패: ${error.message}`);
         }
       },
-      get isRemote() {
-        return true;
-      },
+      
+      get isRemote() { return true; }
     };
-    return remoteImpl;
+    
   } catch (e) {
-    console.error('Firebase 초기화 실패:', e);
-    console.error('에러 상세 정보:', {
-      name: e.name,
-      message: e.message,
-      stack: e.stack
-    });
-    console.warn('Firebase 초기화 실패로 로컬 스토리지를 사용합니다.');
-    return null;
+    console.error('Firebase 원격 DB 연결 실패:', e);
+    console.error('에러 코드:', e.code);
+    console.error('에러 메시지:', e.message);
+    console.warn('Firebase 원격 DB 연결 실패로 로컬 스토리지를 사용합니다.');
+    return null; // Fallback to local storage
   }
 }
 
