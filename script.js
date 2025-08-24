@@ -1582,24 +1582,30 @@ Firebase 초기화에 실패했습니다.
         // Noto Sans KR 폰트 로드 시도
         let fontLoaded = false;
         try {
-          const fontUrls = [
-            'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.woff2',
-            'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.woff',
-            'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.ttf'
-          ];
+          // Google Fonts에서 Noto Sans KR 폰트 로드
+          const fontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap';
           
-          for (const fontUrl of fontUrls) {
-            try {
-              const response = await fetch(fontUrl);
-              if (response.ok) {
-                const fontArrayBuffer = await response.arrayBuffer();
-                doc.addFont(fontArrayBuffer, 'NotoSansKR', 'normal');
-                fontLoaded = true;
-                break;
+          // 폰트 CSS 파일 로드
+          const cssResponse = await fetch(fontUrl);
+          if (cssResponse.ok) {
+            const cssText = await cssResponse.text();
+            
+            // CSS에서 실제 폰트 파일 URL 추출
+            const fontUrlMatch = cssText.match(/src:\s*url\(([^)]+)\)/);
+            if (fontUrlMatch) {
+              const actualFontUrl = fontUrlMatch[1].replace(/['"]/g, '');
+              
+              try {
+                const fontResponse = await fetch(actualFontUrl);
+                if (fontResponse.ok) {
+                  const fontArrayBuffer = await fontResponse.arrayBuffer();
+                  doc.addFont(fontArrayBuffer, 'NotoSansKR', 'normal');
+                  fontLoaded = true;
+                  console.log('Noto Sans KR 폰트 로드 성공');
+                }
+              } catch (fontError) {
+                console.warn('폰트 파일 로드 실패:', fontError);
               }
-            } catch (error) {
-              console.warn(`폰트 로드 실패 (${fontUrl}):`, error);
-              continue;
             }
           }
         } catch (error) {
