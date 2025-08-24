@@ -714,7 +714,7 @@ Firebase 초기화에 실패했습니다.
         }
         
         // 체크박스 변경 이벤트 리스너 추가
-        cb.addEventListener('change', (e) => {
+        cb.addEventListener("change", (e) => {
           const id = e.target.getAttribute('data-id');
           if (id) {
             if (e.target.checked) {
@@ -762,6 +762,26 @@ Firebase 초기화에 실패했습니다.
         if (isSelected) {
           toggleActionButtons(tr, true, String(rec.id));
         }
+        
+        // 호버 이벤트 직접 추가
+        tr.addEventListener('mouseenter', () => {
+          tr.style.backgroundColor = '#374151';
+          tr.style.color = '#ffffff';
+          Array.from(tr.children).forEach(td => {
+            td.style.color = '#ffffff';
+          });
+        });
+        
+        tr.addEventListener('mouseleave', () => {
+          if (!tr.hasAttribute('data-selected')) {
+            tr.style.backgroundColor = '';
+            tr.style.color = '';
+            Array.from(tr.children).forEach(td => {
+              td.style.color = '';
+            });
+          }
+        });
+        
         tr.append(tdCheck, tdDate, tdPlan, tdPlanCum, tdHours, tdHoursCum, tdPercentage, tdActions);
         tbody.appendChild(tr);
       }
