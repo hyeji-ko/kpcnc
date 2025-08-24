@@ -1568,113 +1568,127 @@ Firebase 초기화에 실패했습니다.
       downloadBlob(blob, `${filename}.csv`);
     }
 
-    // PDF 다운로드 (실제 PDF 형식)
-    async function downloadPDF(records, filename) {
-      try {
-        // jsPDF 라이브러리 사용하여 실제 PDF 생성
-        if (typeof window.jsPDF === 'undefined') {
-          console.warn('jsPDF가 로드되지 않았습니다. HTML 기반으로 대체합니다.');
-          await downloadPDFFallback(records, filename);
-          return;
-        }
-        
-        const doc = new window.jsPDF();
-        
-        // 한글 폰트 처리 - 실제 한글 폰트를 다운로드하여 포함
-        let title, headers;
-        
-        try {
-          // 한글 폰트 다운로드 시도 (Google Fonts의 Noto Sans KR)
-          const fontUrl = 'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.woff2';
-          
-          // 폰트 다운로드
-          const fontResponse = await fetch(fontUrl);
-          if (!fontResponse.ok) {
-            throw new Error('폰트 다운로드 실패');
-          }
-          
-          const fontArrayBuffer = await fontResponse.arrayBuffer();
-          
-          // jsPDF에 폰트 추가
-          doc.addFont(fontArrayBuffer, 'NotoSansKR', 'normal');
-          doc.setFont('NotoSansKR');
-          
-          // 한글로 제목과 헤더 설정
-          title = '학습시간 기록';
-          headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
-          
-          console.log('한글 폰트 등록 성공');
-        } catch (error) {
-          console.warn('한글 폰트 등록 실패, 영어로 대체:', error);
-          
-          // 기본 폰트 설정
-          doc.setFont('helvetica');
-          
-          // 영어로 제목과 헤더 설정
-          title = 'Study Time Records';
-          headers = ['Date', 'Plan', 'Actual', 'Plan Cum.', 'Actual Cum.', 'Rate'];
-        }
-        
-        // 제목 추가
-        doc.setFontSize(20);
-        doc.text(title, 105, 20, { align: 'center' });
-        
-        // 테이블 헤더 (이미 위에서 정의됨)
-        const columnWidths = [30, 25, 25, 25, 25, 25];
-        
-        let yPosition = 40;
-        
-        // 헤더 그리기
-        doc.setFontSize(12);
-        doc.setFillColor(240, 240, 240);
-        let xPosition = 20;
-        
-        headers.forEach((header, index) => {
-          doc.rect(xPosition, yPosition - 8, columnWidths[index], 10, 'F');
-          doc.text(header, xPosition + 2, yPosition - 1);
-          xPosition += columnWidths[index];
-        });
-        
-        yPosition += 15;
-        
-        // 데이터 행 그리기
-        doc.setFontSize(10);
-        records.forEach((record, rowIndex) => {
-          if (yPosition > 280) {
-            doc.addPage();
-            yPosition = 20;
-          }
-          
-          xPosition = 20;
-          const rowData = [
-            record.date,
-            record.plan.toString(),
-            record.hours.toString(),
-            record.planCumulative.toString(),
-            record.hoursCumulative.toString(),
-            record.percentage.toString() + '%'
-          ];
-          
-          rowData.forEach((cell, index) => {
-            doc.text(cell, xPosition + 2, yPosition);
-            xPosition += columnWidths[index];
-          });
-          
-          yPosition += 8;
-        });
-        
-        // PDF 파일 다운로드
-        doc.save(`${filename}.pdf`);
-        
-        // 성공 메시지 표시
-        showDownloadMessage('PDF 파일이 성공적으로 생성되었습니다.');
-        
-      } catch (error) {
-        console.error('PDF 생성 실패:', error);
-        // 실패 시 HTML 기반으로 대체
-        await downloadPDFFallback(records, filename);
-      }
-    }
+         // PDF 다운로드 (실제 PDF 형식)
+     async function downloadPDF(records, filename) {
+       try {
+         // jsPDF 라이브러리 사용하여 실제 PDF 생성
+         if (typeof window.jsPDF === 'undefined') {
+           console.warn('jsPDF가 로드되지 않았습니다. HTML 기반으로 대체합니다.');
+           await downloadPDFFallback(records, filename);
+           return;
+         }
+         
+         const doc = new window.jsPDF();
+         
+         // 한글 폰트 처리 - 여러 폰트 시도
+         let title, headers;
+         let fontLoaded = false;
+         
+         // 한글 폰트 목록 (우선순위 순)
+         const fontUrls = [
+           'https://fonts.gstatic.com/s/notosanskr/v36/3Jn7SDv86LjBvSw9Hw.woff2',
+           'https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr5TRA.woff2',
+           'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2'
+         ];
+         
+         for (const fontUrl of fontUrls) {
+           try {
+             console.log('폰트 다운로드 시도:', fontUrl);
+             const fontResponse = await fetch(fontUrl);
+             if (!fontResponse.ok) {
+               throw new Error('폰트 다운로드 실패');
+             }
+             
+             const fontArrayBuffer = await fontResponse.arrayBuffer();
+             const fontName = fontUrl.includes('notosanskr') ? 'NotoSansKR' : 
+                            fontUrl.includes('notosans') ? 'NotoSans' : 'Roboto';
+             
+             // jsPDF에 폰트 추가
+             doc.addFont(fontArrayBuffer, fontName, 'normal');
+             doc.setFont(fontName);
+             
+             console.log('폰트 등록 성공:', fontName);
+             fontLoaded = true;
+             break;
+           } catch (error) {
+             console.warn('폰트 다운로드 실패:', fontUrl, error);
+             continue;
+           }
+         }
+         
+         if (!fontLoaded) {
+           console.warn('모든 폰트 다운로드 실패, 기본 폰트 사용');
+           doc.setFont('helvetica');
+         }
+         
+         // 한글로 제목과 헤더 설정 (폰트가 로드되었든 안되었든)
+         title = '학습시간 기록';
+         headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+         
+         // 제목 추가
+         doc.setFontSize(20);
+         doc.text(title, 105, 20, { align: 'center' });
+         
+         // 테이블 헤더
+         const columnWidths = [30, 25, 25, 25, 25, 25];
+         
+         let yPosition = 40;
+         
+         // 헤더 그리기 - 밝은 배경색으로 변경
+         doc.setFontSize(12);
+         doc.setFillColor(245, 245, 245); // 매우 밝은 회색
+         doc.setTextColor(0, 0, 0); // 검은색 텍스트
+         let xPosition = 20;
+         
+         headers.forEach((header, index) => {
+           // 헤더 배경 그리기
+           doc.rect(xPosition, yPosition - 8, columnWidths[index], 10, 'F');
+           // 헤더 텍스트 그리기
+           doc.text(header, xPosition + 2, yPosition - 1);
+           xPosition += columnWidths[index];
+         });
+         
+         yPosition += 15;
+         
+         // 데이터 행 그리기
+         doc.setFontSize(10);
+         doc.setTextColor(0, 0, 0); // 데이터 텍스트는 검은색
+         records.forEach((record, rowIndex) => {
+           if (yPosition > 280) {
+             doc.addPage();
+             yPosition = 20;
+           }
+           
+           xPosition = 20;
+           const rowData = [
+             record.date,
+             record.plan.toString(),
+             record.hours.toString(),
+             record.planCumulative.toString(),
+             record.hoursCumulative.toString(),
+             record.percentage.toString() + '%'
+           ];
+           
+           rowData.forEach((cell, index) => {
+             doc.text(cell, xPosition + 2, yPosition);
+             xPosition += columnWidths[index];
+           });
+           
+           yPosition += 8;
+         });
+         
+         // PDF 파일 다운로드
+         doc.save(`${filename}.pdf`);
+         
+         // 성공 메시지 표시
+         showDownloadMessage('PDF 파일이 성공적으로 생성되었습니다.');
+         
+       } catch (error) {
+         console.error('PDF 생성 실패:', error);
+         // 실패 시 HTML 기반으로 대체
+         await downloadPDFFallback(records, filename);
+       }
+     }
     
          // PDF 생성 실패 시 HTML 기반 대체 다운로드
      async function downloadPDFFallback(records, filename) {
