@@ -1579,48 +1579,11 @@ Firebase 초기화에 실패했습니다.
         // PDF 문서 생성
         const doc = new jsPDF('p', 'mm', 'a4');
         
-        // Noto Sans KR 폰트 로드 시도
-        let fontLoaded = false;
-        try {
-          // Google Fonts에서 Noto Sans KR 폰트 로드
-          const fontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap';
-          
-          // 폰트 CSS 파일 로드
-          const cssResponse = await fetch(fontUrl);
-          if (cssResponse.ok) {
-            const cssText = await cssResponse.text();
-            
-            // CSS에서 실제 폰트 파일 URL 추출
-            const fontUrlMatch = cssText.match(/src:\s*url\(([^)]+)\)/);
-            if (fontUrlMatch) {
-              const actualFontUrl = fontUrlMatch[1].replace(/['"]/g, '');
-              
-              try {
-                const fontResponse = await fetch(actualFontUrl);
-                if (fontResponse.ok) {
-                  const fontArrayBuffer = await fontResponse.arrayBuffer();
-                  doc.addFont(fontArrayBuffer, 'NotoSansKR', 'normal');
-                  fontLoaded = true;
-                  console.log('Noto Sans KR 폰트 로드 성공');
-                }
-              } catch (fontError) {
-                console.warn('폰트 파일 로드 실패:', fontError);
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Noto Sans KR 폰트 로드 실패, 기본 폰트 사용:', error);
-        }
+        // 기본 폰트 사용 (안정성을 위해)
+        doc.setFont('helvetica');
 
-        // 폰트 설정
-        if (fontLoaded) {
-          doc.setFont('NotoSansKR');
-        } else {
-          doc.setFont('helvetica');
-        }
-
-        // 제목 설정
-        const title = '학습시간 데이터';
+        // 제목 설정 (영문으로 안정성 확보)
+        const title = 'Study Time Data';
         const titleFontSize = 18;
         doc.setFontSize(titleFontSize);
         doc.setTextColor(0, 0, 0);
@@ -1631,8 +1594,8 @@ Firebase 초기화에 실패했습니다.
         const titleX = (pageWidth - titleWidth) / 2;
         doc.text(title, titleX, 25);
 
-        // 헤더 설정
-        const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+        // 헤더 설정 (영문으로 안정성 확보)
+        const headers = ['Date', 'Plan', 'Actual', 'Plan Cum.', 'Actual Cum.', 'Rate %'];
         const headerFontSize = 12;
         doc.setFontSize(headerFontSize);
         
