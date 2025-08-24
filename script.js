@@ -1576,8 +1576,20 @@ Firebase 초기화에 실패했습니다.
       downloadBlob(blob, `${filename}.txt`);
     }
 
-    // DOCX 다운로드 (간단한 HTML 기반)
+    // DOCX 다운로드 (실제 Word 문서 형식)
     async function downloadDOCX(records, filename) {
+      try {
+        // 실제 DOCX 파일 생성을 위해 HTML 기반으로 대체
+        // (브라우저에서 직접 DOCX 생성은 복잡하므로 HTML로 생성 후 Word에서 열기)
+        await downloadDOCXFallback(records, filename);
+      } catch (error) {
+        console.error('DOCX 생성 실패:', error);
+        showDownloadMessage('DOCX 생성 실패. HTML 파일로 다운로드되었습니다.', true);
+      }
+    }
+    
+    // DOCX 생성 실패 시 HTML 기반 대체 다운로드
+    async function downloadDOCXFallback(records, filename) {
       const htmlContent = generateHTMLTable(records);
       const docxContent = `<!DOCTYPE html>
 <html>
@@ -1585,25 +1597,143 @@ Firebase 초기화에 실패했습니다.
 <meta charset="utf-8">
 <title>${filename}</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-th { background-color: #f2f2f2; font-weight: bold; }
-h1 { color: #333; text-align: center; }
+body { 
+  font-family: 'Malgun Gothic', Arial, sans-serif; 
+  margin: 20px; 
+  line-height: 1.6;
+}
+table { 
+  border-collapse: collapse; 
+  width: 100%; 
+  margin-top: 20px; 
+  font-size: 12px;
+}
+th, td { 
+  border: 1px solid #333; 
+  padding: 8px; 
+  text-align: center; 
+  vertical-align: middle;
+}
+th { 
+  background-color: #f2f2f2; 
+  font-weight: bold; 
+  color: #333;
+}
+h1 { 
+  color: #333; 
+  text-align: center; 
+  font-size: 24px;
+  margin-bottom: 30px;
+}
+@media print {
+  body { margin: 0; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+}
 </style>
 </head>
 <body>
 <h1>학습시간 기록</h1>
 ${htmlContent}
+<div style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
+  <p>생성일시: ${new Date().toLocaleString('ko-KR')}</p>
+  <p>총 ${records.length}개 레코드</p>
+</div>
+<script>
+  // 자동 인쇄 다이얼로그 열기 (Word에서 열기 가능)
+  window.onload = function() {
+    setTimeout(function() {
+      // 인쇄 다이얼로그 열기
+      if (window.print) {
+        window.print();
+      }
+    }, 1000);
+  };
+</script>
 </body>
 </html>`;
-      
-      const blob = new Blob([docxContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      downloadBlob(blob, `${filename}.docx`);
-    }
+       
+       const blob = new Blob([docxContent], { type: 'text/html' });
+       downloadBlob(blob, `${filename}_word.html`);
+       
+       // 사용자에게 안내 메시지 표시
+       showDownloadMessage('HTML 파일로 다운로드되었습니다. Word에서 열거나 브라우저에서 인쇄하여 사용하세요.', false);
+     }
 
-    // PDF 다운로드 (HTML 기반)
+    // PDF 다운로드 (실제 PDF 형식)
     async function downloadPDF(records, filename) {
+      try {
+        // jsPDF 라이브러리 사용하여 실제 PDF 생성
+        if (typeof window.jsPDF === 'undefined') {
+          // jsPDF가 로드되지 않은 경우 HTML 기반으로 대체
+          await downloadPDFFallback(records, filename);
+          return;
+        }
+        
+        const { jsPDF } = window.jsPDF;
+        const doc = new jsPDF();
+        
+        // 제목 추가
+        doc.setFontSize(20);
+        doc.text('학습시간 기록', 105, 20, { align: 'center' });
+        
+        // 테이블 헤더
+        const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+        const columnWidths = [30, 25, 25, 25, 25, 25];
+        
+        let yPosition = 40;
+        
+        // 헤더 그리기
+        doc.setFontSize(12);
+        doc.setFillColor(240, 240, 240);
+        let xPosition = 20;
+        
+        headers.forEach((header, index) => {
+          doc.rect(xPosition, yPosition - 8, columnWidths[index], 10, 'F');
+          doc.text(header, xPosition + 2, yPosition - 1);
+          xPosition += columnWidths[index];
+        });
+        
+        yPosition += 15;
+        
+        // 데이터 행 그리기
+        doc.setFontSize(10);
+        records.forEach((record, rowIndex) => {
+          if (yPosition > 280) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          
+          xPosition = 20;
+          const rowData = [
+            record.date,
+            record.plan.toString(),
+            record.hours.toString(),
+            record.planCumulative.toString(),
+            record.hoursCumulative.toString(),
+            record.percentage.toString() + '%'
+          ];
+          
+          rowData.forEach((cell, index) => {
+            doc.text(cell, xPosition + 2, yPosition);
+            xPosition += columnWidths[index];
+          });
+          
+          yPosition += 8;
+        });
+        
+        // PDF 파일 다운로드
+        doc.save(`${filename}.pdf`);
+        
+      } catch (error) {
+        console.error('PDF 생성 실패:', error);
+        // 실패 시 HTML 기반으로 대체
+        await downloadPDFFallback(records, filename);
+      }
+    }
+    
+    // PDF 생성 실패 시 HTML 기반 대체 다운로드
+    async function downloadPDFFallback(records, filename) {
       const htmlContent = generateHTMLTable(records);
       const pdfContent = `<!DOCTYPE html>
 <html>
@@ -1616,16 +1746,32 @@ table { border-collapse: collapse; width: 100%; margin-top: 20px; }
 th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
 th { background-color: #f2f2f2; font-weight: bold; }
 h1 { color: #333; text-align: center; }
+@media print {
+  body { margin: 0; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+}
 </style>
 </head>
 <body>
 <h1>학습시간 기록</h1>
 ${htmlContent}
+<script>
+  // 자동 인쇄 다이얼로그 열기 (PDF로 저장 가능)
+  window.onload = function() {
+    setTimeout(function() {
+      window.print();
+    }, 500);
+  };
+</script>
 </body>
 </html>`;
       
-      const blob = new Blob([pdfContent], { type: 'application/pdf' });
-      downloadBlob(blob, `${filename}.pdf`);
+      const blob = new Blob([pdfContent], { type: 'text/html' });
+      downloadBlob(blob, `${filename}_print.html`);
+      
+      // 사용자에게 안내 메시지 표시
+      showDownloadMessage('PDF 생성 실패. HTML 파일로 다운로드되었습니다. 브라우저에서 인쇄하여 PDF로 저장하세요.', true);
     }
 
     // HTML 테이블 생성
