@@ -6,10 +6,12 @@
     const registerBtn = document.getElementById("registerBtn");
     const listBtn = document.getElementById("listBtn");
     const uploadBtn = document.getElementById("uploadBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
     const batchDeleteBtn = document.getElementById("batchDeleteBtn");
     const formSection = document.getElementById("formSection");
     const gridSection = document.getElementById("gridSection");
     const uploadSection = document.getElementById("uploadSection");
+    const downloadSection = document.getElementById("downloadSection");
     const studyForm = document.getElementById("studyForm");
     const uploadForm = document.getElementById("uploadForm");
     const dateInput = document.getElementById("dateInput");
@@ -29,6 +31,8 @@
     const yearDisplay = document.getElementById("yearDisplay");
     const monthItems = document.querySelectorAll('.month-item');
     const yearItems = document.querySelectorAll('.year-item');
+    const downloadFilenameInput = document.getElementById('downloadFilename');
+    const downloadMessage = document.getElementById('downloadMessage');
 
     // Firebase 원격 DB만 사용
     const DB = window.DB;
@@ -54,6 +58,20 @@
       requestAnimationFrame(() => {
         csvFileInput.click();
       });
+    });
+
+    // 다운로드 버튼 이벤트 리스너
+    downloadBtn.addEventListener("click", () => {
+      showDownload();
+    });
+
+    // 파일 형식별 다운로드 이벤트 리스너
+    document.addEventListener("click", async (e) => {
+      if (e.target.closest('.format-btn')) {
+        const formatBtn = e.target.closest('.format-btn');
+        const format = formatBtn.getAttribute('data-format');
+        await handleDownload(format);
+      }
     });
 
     // CSV 파일 선택 시 자동 업로드 처리
@@ -766,11 +784,33 @@ Firebase 초기화에 실패했습니다.
       batchDeleteBtn.disabled = false;
     }
 
+    function showDownload() {
+      // 모든 섹션 숨기기
+      formSection.classList.add("hidden");
+      gridSection.classList.add("hidden");
+      uploadSection.classList.add("hidden");
+      downloadSection.classList.remove("hidden");
+
+      // 등록 폼 메시지 클리어
+      clearMessage();
+
+      // 업로드 버튼 활성화
+      clearActiveButtons();
+      downloadBtn.classList.add('active');
+
+      // 모든 버튼 활성화
+      registerBtn.disabled = false;
+      listBtn.disabled = false;
+      uploadBtn.disabled = false;
+      batchDeleteBtn.disabled = false;
+    }
+
     function clearActiveButtons() {
       registerBtn.classList.remove('active');
       listBtn.classList.remove('active');
       uploadBtn.classList.remove('active');
       batchDeleteBtn.classList.remove('active');
+      downloadBtn.classList.remove('active');
     }
 
     /** @param {string} value */
@@ -1436,6 +1476,204 @@ Firebase 초기화에 실패했습니다.
         hoursInput.style.borderColor = '#ccc';
       }
     }
+
+    async function handleDownload(format) {
+      try {
+        // 다운로드 진행 모달 표시
+        const progressModal = createProgressModal('데이터 다운로드 중...', '데이터 준비 중...');
+        document.body.appendChild(progressModal);
+        
+        // 데이터 로드 및 필터링
+        const records = await DB.loadRecords();
+        const downloadRange = document.querySelector('input[name="downloadRange"]:checked').value;
+        
+        let filteredRecords = records;
+        if (downloadRange === 'current') {
+          filteredRecords = records.filter(record => {
+            const recordDate = new Date(record.date);
+            return recordDate.getFullYear() === selectedYear && 
+                   recordDate.getMonth() === selectedMonth - 1;
+          });
+        }
+        
+        // 데이터 정렬 (날짜순)
+        const sortedRecords = [...filteredRecords].sort((a, b) => a.date.localeCompare(b.date));
+        
+        if (sortedRecords.length === 0) {
+          progressModal.remove();
+          showDownloadMessage('다운로드할 데이터가 없습니다.', true);
+          return;
+        }
+        
+        // 파일명 가져오기
+        const filename = document.getElementById('downloadFilename').value.trim() || '학습시간_데이터';
+        
+        // 형식별 다운로드 처리
+        switch (format) {
+          case 'csv':
+            await downloadCSV(sortedRecords, filename);
+            break;
+          case 'txt':
+            await downloadTXT(sortedRecords, filename);
+            break;
+          case 'docx':
+            await downloadDOCX(sortedRecords, filename);
+            break;
+          case 'pdf':
+            await downloadPDF(sortedRecords, filename);
+            break;
+          default:
+            throw new Error('지원하지 않는 파일 형식입니다.');
+        }
+        
+        progressModal.remove();
+        showDownloadMessage(`${format.toUpperCase()} 파일 다운로드가 완료되었습니다.`);
+        
+      } catch (error) {
+        console.error('다운로드 실패:', error);
+        showDownloadMessage(`다운로드 실패: ${error.message}`, true);
+      }
+    }
+
+    // CSV 다운로드
+    async function downloadCSV(records, filename) {
+      const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+      const csvContent = [
+        headers.join(','),
+        ...records.map(rec => [
+          rec.date,
+          rec.plan,
+          rec.hours,
+          rec.planCumulative,
+          rec.hoursCumulative,
+          rec.percentage
+        ].join(','))
+      ].join('\n');
+      
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, `${filename}.csv`);
+    }
+
+    // TXT 다운로드
+    async function downloadTXT(records, filename) {
+      const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+      const txtContent = [
+        '학습시간 기록',
+        '='.repeat(50),
+        '',
+        headers.join('\t'),
+        ...records.map(rec => [
+          rec.date,
+          rec.plan,
+          rec.hours,
+          rec.planCumulative,
+          rec.hoursCumulative,
+          rec.percentage
+        ].join('\t'))
+      ].join('\n');
+      
+      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+      downloadBlob(blob, `${filename}.txt`);
+    }
+
+    // DOCX 다운로드 (간단한 HTML 기반)
+    async function downloadDOCX(records, filename) {
+      const htmlContent = generateHTMLTable(records);
+      const docxContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${filename}</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+th { background-color: #f2f2f2; font-weight: bold; }
+h1 { color: #333; text-align: center; }
+</style>
+</head>
+<body>
+<h1>학습시간 기록</h1>
+${htmlContent}
+</body>
+</html>`;
+      
+      const blob = new Blob([docxContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      downloadBlob(blob, `${filename}.docx`);
+    }
+
+    // PDF 다운로드 (HTML 기반)
+    async function downloadPDF(records, filename) {
+      const htmlContent = generateHTMLTable(records);
+      const pdfContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${filename}</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+th { background-color: #f2f2f2; font-weight: bold; }
+h1 { color: #333; text-align: center; }
+</style>
+</head>
+<body>
+<h1>학습시간 기록</h1>
+${htmlContent}
+</body>
+</html>`;
+      
+      const blob = new Blob([pdfContent], { type: 'application/pdf' });
+      downloadBlob(blob, `${filename}.pdf`);
+    }
+
+    // HTML 테이블 생성
+    function generateHTMLTable(records) {
+      const headers = ['학습일자', '계획시간', '실적시간', '계획누적', '실적누적', '실적%'];
+      const rows = records.map(rec => [
+        rec.date,
+        rec.plan,
+        rec.hours,
+        rec.planCumulative,
+        rec.hoursCumulative,
+        rec.percentage
+      ]);
+      
+      return `<table>
+<thead>
+<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+</thead>
+<tbody>
+${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+</tbody>
+</table>`;
+    }
+
+    // Blob 다운로드 공통 함수
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // 다운로드 메시지 표시
+    function showDownloadMessage(message, isError = false) {
+      const downloadMessage = document.getElementById('downloadMessage');
+      downloadMessage.textContent = message;
+      downloadMessage.classList.toggle('error', isError);
+      
+      // 3초 후 메시지 제거
+      setTimeout(() => {
+        downloadMessage.textContent = '';
+        downloadMessage.classList.remove('error');
+      }, 3000);
+    }
   });
 })();
 
@@ -1571,6 +1809,5 @@ function updateProgress(modal, current, total, statusText) {
     progressPercentage.textContent = `(${percentage.toFixed(0)}%)`;
   }
 }
-
 
 
