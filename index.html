@@ -36,6 +36,7 @@
       <div class="header-inner">
         <div class="brand">학습시간 관리</div>
         <div class="actions">
+          <button id="uploadBtn" class="btn" type="button" aria-controls="uploadSection">업로드</button>
           <button id="registerBtn" class="btn primary" type="button" aria-controls="formSection">등록</button>
           <button id="listBtn" class="btn" type="button" aria-controls="gridSection">조회</button>
         </div>
@@ -43,6 +44,22 @@
     </header>
 
     <main class="app-main">
+      <section id="uploadSection" class="card hidden" aria-labelledby="uploadBtn">
+        <h2 class="card-title">CSV 파일 업로드</h2>
+        <form id="uploadForm" novalidate>
+          <div class="form-row">
+            <label for="csvFileInput">CSV 파일 선택</label>
+            <input id="csvFileInput" name="csvFile" type="file" accept=".csv" required />
+            <div class="help-text">학습일자, 계획, 계획누적, 실적, 실적누적, 실적% 형식의 CSV 파일</div>
+          </div>
+          <div class="form-actions">
+            <button class="btn primary" type="submit">업로드</button>
+            <button class="btn" type="reset">초기화</button>
+          </div>
+          <p id="uploadMessage" class="form-message" role="alert" aria-live="polite"></p>
+        </form>
+      </section>
+
       <section id="formSection" class="card hidden" aria-labelledby="registerBtn">
         <h2 class="card-title">학습시간 등록</h2>
         <form id="studyForm" novalidate>
@@ -51,9 +68,14 @@
             <input id="dateInput" name="date" type="date" required />
           </div>
           <div class="form-row">
-            <label for="hoursInput">학습시간</label>
-            <input id="hoursInput" name="hours" type="text" inputmode="decimal" placeholder="예: 1.5" aria-describedby="hoursHelp" required />
-            <div id="hoursHelp" class="help-text">숫자만 입력, 소숫점 1자리까지</div>
+            <label for="planInput">계획 (시간)</label>
+            <input id="planInput" name="plan" type="text" inputmode="decimal" placeholder="예: 2.5" required />
+            <div class="help-text">숫자만 입력, 소숫점 1자리까지</div>
+          </div>
+          <div class="form-row">
+            <label for="hoursInput">실적 (시간)</label>
+            <input id="hoursInput" name="hours" type="text" inputmode="decimal" placeholder="예: 1.5" required />
+            <div class="help-text">숫자만 입력, 소숫점 1자리까지</div>
           </div>
           <div class="form-actions">
             <button class="btn primary" type="submit">저장</button>
@@ -108,13 +130,16 @@
               <tr>
                 <th scope="col" style="width:40px"></th>
                 <th scope="col">학습날짜</th>
-                <th scope="col">학습시간</th>
-                <th scope="col">누적시간</th>
+                <th scope="col">계획</th>
+                <th scope="col">계획누적</th>
+                <th scope="col">실적</th>
+                <th scope="col">실적누적</th>
+                <th scope="col">실적%</th>
                 <th scope="col" style="width:160px">작업</th>
               </tr>
             </thead>
             <tbody id="recordsTbody">
-              <tr class="empty-row"><td colspan="5">등록된 데이터가 없습니다.</td></tr>
+              <tr class="empty-row"><td colspan="7">등록된 데이터가 없습니다.</td></tr>
             </tbody>
           </table>
           <div id="paginationNav" class="pagination-nav hidden">
