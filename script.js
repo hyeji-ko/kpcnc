@@ -73,7 +73,7 @@
           }
 
           // 진행상황 표시를 위한 모달 생성
-          const progressModal = createProgressModal('CSV 업로드 진행 중...', records.length);
+          const progressModal = createProgressModal('CSV 업로드 진행 중...', '업로드 준비 중...');
           document.body.appendChild(progressModal);
 
           // 기존 데이터와 병합하여 누적값 계산
@@ -108,7 +108,19 @@
           if (mergedRecords.length > 0) {
             const earliestDate = mergedRecords.reduce((earliest, record) => 
               record.date < earliest ? record.date : earliest, mergedRecords[0].date);
-            await recalculateCumulativeFromDate(earliestDate);
+            
+            // 누적값 재계산 진행상태 표시
+            const recalcModal = createProgressModal('누적값 재계산 중...', '계산 중...');
+            document.body.appendChild(recalcModal);
+            
+            try {
+              await recalculateCumulativeFromDate(earliestDate, recalcModal);
+              recalcModal.remove();
+            } catch (error) {
+              recalcModal.remove();
+              console.error('누적값 재계산 실패:', error);
+              showStatusMessage('누적값 재계산 실패', 'error');
+            }
           }
           
           // 업로드 완료 후 바로 조회 화면으로 이동하고 조회 버튼 활성화
@@ -178,7 +190,7 @@
         }
         
         // 진행상황 표시를 위한 모달 생성
-        const progressModal = createProgressModal('일괄삭제 진행 중...', allRecords.length);
+        const progressModal = createProgressModal('일괄삭제 진행 중...', '삭제 준비 중...');
         document.body.appendChild(progressModal);
         
         // 삭제 진행
@@ -366,11 +378,22 @@
             studyForm.reset();
             setMessage("데이터가 수정되었습니다.");
             
-            // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
-            await recalculateCumulativeFromDate(dateValue);
+            // 누적값 재계산 진행상태 표시
+            const progressModal = createProgressModal('누적값 재계산 중...', '계산 중...');
+            document.body.appendChild(progressModal);
             
-            // 수정 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
-            await showGridAndRefresh();
+            try {
+              // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+              await recalculateCumulativeFromDate(dateValue, progressModal);
+              progressModal.remove();
+              
+              // 수정 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
+              await showGridAndRefresh();
+            } catch (error) {
+              progressModal.remove();
+              console.error('누적값 재계산 실패:', error);
+              showStatusMessage('누적값 재계산 실패', 'error');
+            }
             return;
           } else {
             // 사용자가 취소한 경우
@@ -396,11 +419,22 @@
         studyForm.reset();
         setMessage("저장되었습니다.");
         
-        // 등록된 날짜 이후의 모든 데이터에 대해 누적값 재계산
-        await recalculateCumulativeFromDate(dateValue);
+        // 누적값 재계산 진행상태 표시
+        const progressModal = createProgressModal('누적값 재계산 중...', '계산 중...');
+        document.body.appendChild(progressModal);
         
-        // 등록 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
-        await showGridAndRefresh();
+        try {
+          // 등록된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+          await recalculateCumulativeFromDate(dateValue, progressModal);
+          progressModal.remove();
+          
+          // 등록 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
+          await showGridAndRefresh();
+        } catch (error) {
+          progressModal.remove();
+          console.error('누적값 재계산 실패:', error);
+          showStatusMessage('누적값 재계산 실패', 'error');
+        }
       } catch (error) {
         console.error('데이터 저장 실패:', error);
         setMessage(`저장 실패: ${error.message}`, true);
@@ -478,14 +512,25 @@
             percentage: percentage
           });
           
-          // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
-          await recalculateCumulativeFromDate(rec.date);
+          // 누적값 재계산 진행상태 표시
+          const progressModal = createProgressModal('누적값 재계산 중...', '계산 중...');
+          document.body.appendChild(progressModal);
           
-          // 수정 완료 후 즉시 재조회 처리
-          await showGridAndRefresh();
-          
-          // 수정 완료 메시지 표시
-          showStatusMessage('데이터가 수정되었습니다.', 'success');
+          try {
+            // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+            await recalculateCumulativeFromDate(rec.date, progressModal);
+            progressModal.remove();
+            
+            // 수정 완료 후 즉시 재조회 처리
+            await showGridAndRefresh();
+            
+            // 수정 완료 메시지 표시
+            showStatusMessage('데이터가 수정되었습니다.', 'success');
+          } catch (error) {
+            progressModal.remove();
+            console.error('누적값 재계산 실패:', error);
+            showStatusMessage('누적값 재계산 실패', 'error');
+          }
         } catch (error) {
           console.error('데이터 수정 실패:', error);
           showStatusMessage(`수정 실패: ${error.message}`, 'error');
@@ -505,14 +550,25 @@
           await DB.deleteRecord(id);
           selectedIds.delete(id);
           
-          // 삭제된 날짜 이후의 모든 데이터에 대해 누적값 재계산
-          await recalculateCumulativeFromDate(rec.date);
+          // 누적값 재계산 진행상태 표시
+          const progressModal = createProgressModal('누적값 재계산 중...', '계산 중...');
+          document.body.appendChild(progressModal);
           
-          // 삭제 완료 후 즉시 재조회 처리
-          await showGridAndRefresh();
-          
-          // 삭제 완료 메시지 표시
-          showStatusMessage('데이터가 삭제되었습니다.', 'success');
+          try {
+            // 삭제된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+            await recalculateCumulativeFromDate(rec.date, progressModal);
+            progressModal.remove();
+            
+            // 삭제 완료 후 즉시 재조회 처리
+            await showGridAndRefresh();
+            
+            // 삭제 완료 메시지 표시
+            showStatusMessage('데이터가 삭제되었습니다.', 'success');
+          } catch (error) {
+            progressModal.remove();
+            console.error('누적값 재계산 실패:', error);
+            showStatusMessage('누적값 재계산 실패', 'error');
+          }
         } catch (error) {
           console.error('데이터 삭제 실패:', error);
           showStatusMessage(`삭제 실패: ${error.message}`, 'error');
@@ -872,8 +928,9 @@ Firebase 초기화에 실패했습니다.
     /**
      * 특정 날짜 이후의 모든 데이터에 대해 누적값을 재계산하고 DB에 저장
      * @param {string} fromDate - 재계산 시작 날짜 (YYYY-MM-DD)
+     * @param {HTMLDivElement} progressModal - 진행상태 모달 (선택사항)
      */
-    async function recalculateCumulativeFromDate(fromDate) {
+    async function recalculateCumulativeFromDate(fromDate, progressModal = null) {
       try {
         console.log(`${fromDate} 포함 이후 데이터 누적값 재계산 시작...`);
         
@@ -887,6 +944,10 @@ Firebase 초기화에 실패했습니다.
           console.log('재계산할 데이터가 없습니다.');
           return;
         }
+        
+        // 재계산할 총 레코드 수
+        const totalRecords = sortedRecords.length - startIndex;
+        let processedCount = 0;
         
         // 재계산 시작 전까지의 누적값 계산
         let runningPlanCum = 0;
@@ -919,6 +980,17 @@ Firebase 초기화에 실패했습니다.
             });
             
             console.log(`${record.date} 누적값 업데이트: 계획누적=${newPlanCumulative}, 실적누적=${newHoursCumulative}, 실적%=${newPercentage}%`);
+          }
+          
+          // 진행상태 업데이트
+          processedCount++;
+          if (progressModal) {
+            const percentage = Math.round((processedCount / totalRecords) * 100);
+            updateProgress(progressModal, processedCount, totalRecords, 
+              `누적값 재계산 중... ${processedCount}/${totalRecords} (${percentage}%)`);
+            
+            // 너무 빠른 진행 방지를 위한 짧은 대기
+            await new Promise(resolve => setTimeout(resolve, 10));
           }
         }
         
@@ -1390,20 +1462,23 @@ function showStatusMessage(message, type = 'info') {
 /**
  * 진행상황을 표시하는 모달을 생성하는 함수
  * @param {string} title - 모달 제목
- * @param {number} totalItems - 총 항목 수
+ * @param {string} initialStatus - 초기 상태 메시지
  * @returns {HTMLDivElement}
  */
-function createProgressModal(title, totalItems) {
+function createProgressModal(title, initialStatus = '처리 중...') {
   const modal = document.createElement('div');
   modal.className = 'progress-modal';
   modal.innerHTML = `
     <div class="modal-content">
       <h2>${title}</h2>
-      <p>총 ${totalItems}개의 항목을 처리 중입니다.</p>
       <div class="progress-bar">
         <div class="progress-bar-fill"></div>
       </div>
-      <p class="progress-status"></p>
+      <p class="progress-status">${initialStatus}</p>
+      <div class="progress-details">
+        <span class="progress-count">0</span> / <span class="progress-total">0</span>
+        <span class="progress-percentage">(0%)</span>
+      </div>
     </div>
   `;
   return modal;
@@ -1419,6 +1494,9 @@ function createProgressModal(title, totalItems) {
 function updateProgress(modal, current, total, statusText) {
   const progressBarFill = modal.querySelector('.progress-bar-fill');
   const progressStatus = modal.querySelector('.progress-status');
+  const progressCount = modal.querySelector('.progress-count');
+  const progressTotal = modal.querySelector('.progress-total');
+  const progressPercentage = modal.querySelector('.progress-percentage');
   
   if (progressBarFill) {
     const percentage = (current / total) * 100;
@@ -1427,6 +1505,15 @@ function updateProgress(modal, current, total, statusText) {
   
   if (progressStatus) {
     progressStatus.textContent = statusText;
+  }
+  if (progressCount) {
+    progressCount.textContent = current;
+  }
+  if (progressTotal) {
+    progressTotal.textContent = total;
+  }
+  if (progressPercentage) {
+    progressPercentage.textContent = `(${percentage.toFixed(0)}%)`;
   }
 }
 
