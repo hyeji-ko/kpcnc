@@ -453,39 +453,61 @@
         const normalizedPlan = Math.round(plan * 10) / 10;
         const normalizedHours = Math.round(hours * 10) / 10;
         
-        // 누적값 재계산
-        const allRecords = await DB.loadRecords();
-        const otherRecords = allRecords.filter(r => String(r.id) !== id);
-        const planCumulative = calculatePlanCumulative(otherRecords, normalizedPlan);
-        const hoursCumulative = calculateHoursCumulative(otherRecords, normalizedHours);
-        const percentage = planCumulative > 0 ? Math.round((hoursCumulative / planCumulative) * 1000) / 10 : 0;
-        
-        await DB.updateRecord(id, { 
-          plan: normalizedPlan, 
-          planCumulative: planCumulative,
-          hours: normalizedHours, 
-          hoursCumulative: hoursCumulative,
-          percentage: percentage
-        });
-        
-        // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
-        await recalculateCumulativeFromDate(rec.date);
-        
-        // 수정 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
-        await showGridAndRefresh();
+        try {
+          // 누적값 재계산
+          const allRecords = await DB.loadRecords();
+          const otherRecords = allRecords.filter(r => String(r.id) !== id);
+          const planCumulative = calculatePlanCumulative(otherRecords, normalizedPlan);
+          const hoursCumulative = calculateHoursCumulative(otherRecords, normalizedHours);
+          const percentage = planCumulative > 0 ? Math.round((hoursCumulative / planCumulative) * 1000) / 10 : 0;
+          
+          await DB.updateRecord(id, { 
+            plan: normalizedPlan, 
+            planCumulative: planCumulative,
+            hours: normalizedHours, 
+            hoursCumulative: hoursCumulative,
+            percentage: percentage
+          });
+          
+          // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+          await recalculateCumulativeFromDate(rec.date);
+          
+          // 수정 완료 후 즉시 재조회 처리
+          await showGridAndRefresh();
+          
+          // 수정 완료 메시지 표시
+          showStatusMessage('데이터가 수정되었습니다.', 'success');
+        } catch (error) {
+          console.error('데이터 수정 실패:', error);
+          showStatusMessage(`수정 실패: ${error.message}`, 'error');
+        }
       } else if (target.closest('.delete-btn')) {
         const id = target.getAttribute('data-id');
         if (!id) return;
         const ok = window.confirm('이 항목을 삭제하시겠습니까?');
         if (!ok) return;
-        await DB.deleteRecord(id);
-        selectedIds.delete(id);
         
-        // 삭제된 날짜 이후의 모든 데이터에 대해 누적값 재계산
-        await recalculateCumulativeFromDate(rec.date);
-        
-        // 삭제 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
-        await showGridAndRefresh();
+        try {
+          // 삭제 전에 레코드 정보 저장 (누적값 재계산용)
+          const records = await DB.loadRecords();
+          const rec = records.find(r => String(r.id) === id);
+          if (!rec) return;
+          
+          await DB.deleteRecord(id);
+          selectedIds.delete(id);
+          
+          // 삭제된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+          await recalculateCumulativeFromDate(rec.date);
+          
+          // 삭제 완료 후 즉시 재조회 처리
+          await showGridAndRefresh();
+          
+          // 삭제 완료 메시지 표시
+          showStatusMessage('데이터가 삭제되었습니다.', 'success');
+        } catch (error) {
+          console.error('데이터 삭제 실패:', error);
+          showStatusMessage(`삭제 실패: ${error.message}`, 'error');
+        }
       }
     });
 
@@ -642,6 +664,9 @@ Firebase 초기화에 실패했습니다. (${deviceType})
       
       // 등록 폼 메시지 클리어
       clearMessage();
+      
+      // 체크박스 선택 상태 초기화
+      selectedIds.clear();
       
       // 조회 버튼 활성화
       clearActiveButtons();
@@ -968,7 +993,8 @@ Firebase 초기화에 실패했습니다. (${deviceType})
         cb.type = 'checkbox';
         cb.className = 'row-check';
         cb.setAttribute('data-id', String(rec.id || ''));
-        cb.checked = rec.id ? selectedIds.has(String(rec.id)) : false;
+        // 체크박스 선택 상태 초기화 (수정/삭제 후 재조회 시)
+        cb.checked = false;
         
         // 체크박스 선택 상태에 따라 행에 data-selected 속성 설정
         if (cb.checked && rec.id) {
@@ -1140,6 +1166,9 @@ Firebase 초기화에 실패했습니다. (${deviceType})
     async function showGridAndRefresh() {
       // 조회 화면으로 이동
       showGrid();
+      
+      // 체크박스 선택 상태 초기화
+      selectedIds.clear();
       
       // 데이터 새로고침 (현재일자 페이지로 이동)
       await renderGrid(false);
