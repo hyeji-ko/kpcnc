@@ -53,6 +53,11 @@
 
     // Attach listeners BEFORE any awaits so UI remains responsive
     uploadBtn.addEventListener("click", async () => {
+      // 다운로드 화면이 열려있다면 제거
+      if (!downloadSection.classList.contains("hidden")) {
+        downloadSection.classList.add("hidden");
+      }
+      
       showUpload();
       // 파일 선택기가 자동으로 열리도록 CSV 파일 입력 필드 클릭
       requestAnimationFrame(() => {
@@ -151,6 +156,11 @@
     });
 
     registerBtn.addEventListener("click", async () => {
+      // 다운로드 화면이 열려있다면 제거
+      if (!downloadSection.classList.contains("hidden")) {
+        downloadSection.classList.add("hidden");
+      }
+      
       // 모든 버튼에서 active 클래스 제거
       clearActiveButtons();
       // 등록 버튼 활성화
@@ -175,6 +185,11 @@
     });
 
     listBtn.addEventListener("click", async () => {
+      // 다운로드 화면이 열려있다면 제거
+      if (!downloadSection.classList.contains("hidden")) {
+        downloadSection.classList.add("hidden");
+      }
+      
       // 모든 버튼에서 active 클래스 제거
       clearActiveButtons();
       // 조회 버튼 활성화
@@ -196,6 +211,11 @@
     
     // 일괄삭제 버튼 이벤트 리스너
     batchDeleteBtn.addEventListener("click", async () => {
+      // 다운로드 화면이 열려있다면 제거
+      if (!downloadSection.classList.contains("hidden")) {
+        downloadSection.classList.add("hidden");
+      }
+      
       const confirmDelete = window.confirm('Firebase에 저장된 모든 데이터를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.');
       if (!confirmDelete) return;
       
