@@ -75,27 +75,11 @@ async function getRemoteImpl() {
     if (!window.FIREBASE_INITIALIZED) {
       console.log('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
       
-      // 모바일 환경 감지
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      console.log('모바일 환경 감지:', isMobile);
-      
       try {
         await window.initializeFirebase();
         console.log('Firebase 초기화 성공');
       } catch (initError) {
         console.error('Firebase 초기화 실패:', initError);
-        
-        // 모바일에서는 더 자세한 오류 정보 제공
-        if (isMobile) {
-          console.error('모바일 Firebase 초기화 실패 상세:', {
-            error: initError,
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            cookieEnabled: navigator.cookieEnabled,
-            onLine: navigator.onLine
-          });
-        }
-        
         return null;
       }
     }
@@ -108,17 +92,13 @@ async function getRemoteImpl() {
     // Firestore 인스턴스 가져오기
     const db = firebase.firestore();
     
-    // 모바일 환경에서 연결 테스트
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      try {
-        // 모바일에서는 간단한 연결 테스트만 수행
-        await db.collection('_test').limit(1).get();
-        console.log('모바일 Firestore 연결 테스트 성공');
-      } catch (testError) {
-        console.warn('모바일 Firestore 연결 테스트 실패:', testError.message);
-        // 모바일에서는 연결 테스트 실패해도 계속 진행
-      }
+    // 간단한 연결 테스트
+    try {
+      await db.collection('_test').limit(1).get();
+      console.log('Firestore 연결 테스트 성공');
+    } catch (testError) {
+      console.warn('Firestore 연결 테스트 실패:', testError.message);
+      // 연결 테스트 실패해도 계속 진행
     }
     
     return {
@@ -170,29 +150,8 @@ async function getRemoteImpl() {
     };
   } catch (error) {
     console.error('Firebase 원격 DB 연결 실패:', error);
-    
-    // 모바일 환경 감지
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const deviceType = isMobile ? '모바일' : 'PC';
-    
     console.error('에러 코드:', error.code);
     console.error('에러 메시지:', error.message);
-    
-    if (isMobile) {
-      console.error('모바일 Firebase 연결 실패 상세 정보:', {
-        error: error,
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        cookieEnabled: navigator.cookieEnabled,
-        onLine: navigator.onLine,
-        connection: navigator.connection ? {
-          effectiveType: navigator.connection.effectiveType,
-          downlink: navigator.connection.downlink,
-          rtt: navigator.connection.rtt
-        } : 'Not supported'
-      });
-    }
-    
     return null;
   }
 }
