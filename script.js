@@ -104,6 +104,13 @@
           setUploadMessage(`${records.length}개의 레코드가 성공적으로 업로드되었습니다.`);
           uploadForm.reset();
           
+          // 업로드된 데이터 중 가장 이른 날짜 이후의 모든 데이터에 대해 누적값 재계산
+          if (mergedRecords.length > 0) {
+            const earliestDate = mergedRecords.reduce((earliest, record) => 
+              record.date < earliest ? record.date : earliest, mergedRecords[0].date);
+            await recalculateCumulativeFromDate(earliestDate);
+          }
+          
           // 업로드 완료 후 바로 조회 화면으로 이동하고 조회 버튼 활성화
           await showGridAndRefresh();
         } catch (error) {
@@ -342,6 +349,9 @@
             studyForm.reset();
             setMessage("데이터가 수정되었습니다.");
             
+            // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+            await recalculateCumulativeFromDate(dateValue);
+            
             // 수정 완료 후 조회 화면으로 이동하고 조회 버튼 활성화
             await showGridAndRefresh();
             return;
@@ -368,6 +378,9 @@
         await DB.addRecord(record);
         studyForm.reset();
         setMessage("저장되었습니다.");
+        
+        // 등록된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+        await recalculateCumulativeFromDate(dateValue);
         
         // 등록 완료 후 조회 화면으로 이동하고 조회 버튼 활성화
         await showGridAndRefresh();
@@ -437,6 +450,10 @@
           hoursCumulative: hoursCumulative,
           percentage: percentage
         });
+        
+        // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+        await recalculateCumulativeFromDate(rec.date);
+        
         await renderGrid();
       } else if (target.closest('.delete-btn')) {
         const id = target.getAttribute('data-id');
@@ -445,6 +462,10 @@
         if (!ok) return;
         await DB.deleteRecord(id);
         selectedIds.delete(id);
+        
+        // 삭제된 날짜 이후의 모든 데이터에 대해 누적값 재계산
+        await recalculateCumulativeFromDate(rec.date);
+        
         await renderGrid();
       }
     });
@@ -781,6 +802,66 @@ Firebase 초기화에 실패했습니다.
     function calculateHoursCumulative(existingRecords, newHours) {
       const totalHours = existingRecords.reduce((sum, record) => sum + record.hours, 0);
       return totalHours + newHours;
+    }
+
+    /**
+     * 특정 날짜 이후의 모든 데이터에 대해 누적값을 재계산하고 DB에 저장
+     * @param {string} fromDate - 재계산 시작 날짜 (YYYY-MM-DD)
+     */
+    async function recalculateCumulativeFromDate(fromDate) {
+      try {
+        console.log(`${fromDate} 포함 이후 데이터 누적값 재계산 시작...`);
+        
+        // 모든 레코드를 날짜순으로 정렬
+        const allRecords = await DB.loadRecords();
+        const sortedRecords = [...allRecords].sort((a, b) => a.date.localeCompare(b.date));
+        
+        // 재계산 시작 인덱스 찾기 (해당 날짜 포함)
+        const startIndex = sortedRecords.findIndex(record => record.date >= fromDate);
+        if (startIndex === -1) {
+          console.log('재계산할 데이터가 없습니다.');
+          return;
+        }
+        
+        // 재계산 시작 전까지의 누적값 계산
+        let runningPlanCum = 0;
+        let runningHoursCum = 0;
+        
+        for (let i = 0; i < startIndex; i++) {
+          runningPlanCum += sortedRecords[i].plan;
+          runningHoursCum += sortedRecords[i].hours;
+        }
+        
+        // 재계산 시작 날짜부터 모든 데이터 업데이트 (해당 날짜 포함)
+        for (let i = startIndex; i < sortedRecords.length; i++) {
+          const record = sortedRecords[i];
+          runningPlanCum += record.plan;
+          runningHoursCum += record.hours;
+          
+          const newPlanCumulative = runningPlanCum;
+          const newHoursCumulative = runningHoursCum;
+          const newPercentage = runningPlanCum > 0 ? Math.round((runningHoursCum / runningPlanCum) * 1000) / 10 : 0;
+          
+          // 데이터가 변경된 경우에만 업데이트
+          if (record.planCumulative !== newPlanCumulative || 
+              record.hoursCumulative !== newHoursCumulative || 
+              record.percentage !== newPercentage) {
+            
+            await DB.updateRecord(record.id, {
+              planCumulative: newPlanCumulative,
+              hoursCumulative: newHoursCumulative,
+              percentage: newPercentage
+            });
+            
+            console.log(`${record.date} 누적값 업데이트: 계획누적=${newPlanCumulative}, 실적누적=${newHoursCumulative}, 실적%=${newPercentage}%`);
+          }
+        }
+        
+        console.log('누적값 재계산 완료');
+      } catch (error) {
+        console.error('누적값 재계산 실패:', error);
+        throw error;
+      }
     }
 
     async function renderGrid() {
