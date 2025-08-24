@@ -72,15 +72,35 @@
             return;
           }
 
+          // 진행상황 표시를 위한 모달 생성
+          const progressModal = createProgressModal('CSV 업로드 진행 중...', records.length);
+          document.body.appendChild(progressModal);
+
           // 기존 데이터와 병합하여 누적값 계산
           const existingRecords = await DB.loadRecords();
           const mergedRecords = mergeAndCalculateCumulative(existingRecords, records);
           
-          // DB에 저장
-          for (const record of mergedRecords) {
-            await DB.addRecord(record);
+          // DB에 저장 (진행상황 표시)
+          let uploadedCount = 0;
+          for (let i = 0; i < mergedRecords.length; i++) {
+            const record = mergedRecords[i];
+            try {
+              await DB.addRecord(record);
+              uploadedCount++;
+              
+              // 진행상황 업데이트
+              updateProgress(progressModal, uploadedCount, mergedRecords.length, `업로드 중... ${uploadedCount}/${mergedRecords.length}`);
+              
+              // 잠시 대기 (너무 빠른 업로드 방지)
+              await new Promise(resolve => setTimeout(resolve, 50));
+            } catch (error) {
+              console.error(`레코드 업로드 실패:`, error);
+            }
           }
 
+          // 모달 제거
+          progressModal.remove();
+          
           setUploadMessage(`${records.length}개의 레코드가 성공적으로 업로드되었습니다.`);
           uploadForm.reset();
           
@@ -148,14 +168,32 @@
           return;
         }
         
+        // 진행상황 표시를 위한 모달 생성
+        const progressModal = createProgressModal('일괄삭제 진행 중...', allRecords.length);
+        document.body.appendChild(progressModal);
+        
         // 삭제 진행
         let deletedCount = 0;
-        for (const record of allRecords) {
+        for (let i = 0; i < allRecords.length; i++) {
+          const record = allRecords[i];
           if (record.id) {
-            await DB.deleteRecord(record.id);
-            deletedCount++;
+            try {
+              await DB.deleteRecord(record.id);
+              deletedCount++;
+              
+              // 진행상황 업데이트
+              updateProgress(progressModal, deletedCount, allRecords.length, `삭제 중... ${deletedCount}/${allRecords.length}`);
+              
+              // 잠시 대기 (너무 빠른 삭제 방지)
+              await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+              console.error(`레코드 ${record.id} 삭제 실패:`, error);
+            }
           }
         }
+        
+        // 모달 제거
+        progressModal.remove();
         
         alert(`${deletedCount}개의 데이터가 성공적으로 삭제되었습니다.`);
         
@@ -265,8 +303,53 @@
       const normalizedHours = Number.isNaN(hoursNumber) ? 0 : Math.round(hoursNumber * 10) / 10;
 
       try {
-        // 기존 데이터 로드하여 누적값 계산
+        // 기존 데이터 로드하여 중복일자 확인
         const existingRecords = await DB.loadRecords();
+        const existingRecord = existingRecords.find(record => record.date === dateValue);
+        
+        if (existingRecord) {
+          // 동일일자 데이터가 있으면 수정 처리
+          const confirmUpdate = window.confirm(
+            `${dateValue}에 이미 등록된 데이터가 있습니다.\n\n` +
+            `기존: 계획 ${existingRecord.plan}시간, 실적 ${existingRecord.hours}시간\n` +
+            `새로운: 계획 ${normalizedPlan}시간, 실적 ${normalizedHours}시간\n\n` +
+            `수정하시겠습니까?`
+          );
+          
+          if (confirmUpdate) {
+            // 기존 데이터 삭제
+            if (existingRecord.id) {
+              await DB.deleteRecord(existingRecord.id);
+            }
+            
+            // 새로운 데이터 추가
+            const planCumulative = calculatePlanCumulative(existingRecords.filter(r => r.date !== dateValue), normalizedPlan);
+            const hoursCumulative = calculateHoursCumulative(existingRecords.filter(r => r.date !== dateValue), normalizedHours);
+            const percentage = planCumulative > 0 ? Math.round((hoursCumulative / planCumulative) * 1000) / 10 : 0;
+
+            const record = {
+              date: dateValue,
+              plan: normalizedPlan,
+              planCumulative: planCumulative,
+              hours: normalizedHours,
+              hoursCumulative: hoursCumulative,
+              percentage: percentage
+            };
+
+            await DB.addRecord(record);
+            studyForm.reset();
+            setMessage("데이터가 수정되었습니다.");
+            
+            // 수정 완료 후 조회 화면으로 이동하고 조회 버튼 활성화
+            await showGridAndRefresh();
+            return;
+          } else {
+            // 사용자가 취소한 경우
+            return;
+          }
+        }
+
+        // 새로운 데이터 추가 (기존 로직)
         const planCumulative = calculatePlanCumulative(existingRecords, normalizedPlan);
         const hoursCumulative = calculateHoursCumulative(existingRecords, normalizedHours);
         const percentage = planCumulative > 0 ? Math.round((hoursCumulative / planCumulative) * 1000) / 10 : 0;
@@ -1000,6 +1083,66 @@ function showStatusMessage(message, type = 'info') {
       statusDiv.remove();
     }
   }, 5000);
+}
+
+/**
+ * 진행상황을 표시하는 모달을 생성하는 함수
+ * @param {string} title - 모달 제목
+ * @param {number} totalItems - 총 항목 수
+ * @returns {HTMLDivElement}
+ */
+function createProgressModal(title, totalItems) {
+  const modal = document.createElement('div');
+  modal.className = 'progress-modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <h2>${title}</h2>
+      <p>총 ${totalItems}개의 항목을 처리 중입니다.</p>
+      <div class="progress-bar">
+        <div class="progress-bar-fill"></div>
+      </div>
+      <p class="progress-status"></p>
+    </div>
+  `;
+  modal.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 300px;
+    text-align: center;
+  `;
+  return modal;
+}
+
+/**
+ * 진행상황을 업데이트하는 함수
+ * @param {HTMLDivElement} modal - 모달 요소
+ * @param {number} current - 현재 처리된 항목 수
+ * @param {number} total - 총 항목 수
+ * @param {string} statusText - 표시할 상태 텍스트
+ */
+function updateProgress(modal, current, total, statusText) {
+  const progressBarFill = modal.querySelector('.progress-bar-fill');
+  const progressStatus = modal.querySelector('.progress-status');
+  
+  if (progressBarFill) {
+    const percentage = (current / total) * 100;
+    progressBarFill.style.width = `${percentage}%`;
+  }
+  
+  if (progressStatus) {
+    progressStatus.textContent = statusText;
+  }
 }
 
 
