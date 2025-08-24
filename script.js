@@ -1564,6 +1564,9 @@ async function downloadPDF(records, filename) {
     
     const doc = new window.jsPDF();
     
+    // 한글 폰트 설정 (기본 폰트 사용)
+    doc.setFont('helvetica');
+    
     // 제목 추가
     doc.setFontSize(20);
     doc.text('학습시간 기록', 105, 20, { align: 'center' });
@@ -1626,20 +1629,43 @@ async function downloadPDF(records, filename) {
   }
 }
     
-    // PDF 생성 실패 시 HTML 기반 대체 다운로드
-    async function downloadPDFFallback(records, filename) {
-      const htmlContent = generateHTMLTable(records);
-      const pdfContent = `<!DOCTYPE html>
+         // PDF 생성 실패 시 HTML 기반 대체 다운로드
+     async function downloadPDFFallback(records, filename) {
+       const htmlContent = generateHTMLTable(records);
+       const pdfContent = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>${filename}</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-th { background-color: #f2f2f2; font-weight: bold; }
-h1 { color: #333; text-align: center; }
+body { 
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', Arial, sans-serif; 
+  margin: 20px; 
+  line-height: 1.6;
+}
+table { 
+  border-collapse: collapse; 
+  width: 100%; 
+  margin-top: 20px; 
+  font-size: 12px;
+}
+th, td { 
+  border: 1px solid #ddd; 
+  padding: 8px; 
+  text-align: center; 
+  vertical-align: middle;
+}
+th { 
+  background-color: #f2f2f2; 
+  font-weight: bold; 
+  color: #333;
+}
+h1 { 
+  color: #333; 
+  text-align: center; 
+  font-size: 24px;
+  margin-bottom: 30px;
+}
 @media print {
   body { margin: 0; }
   table { page-break-inside: auto; }
@@ -1650,6 +1676,10 @@ h1 { color: #333; text-align: center; }
 <body>
 <h1>학습시간 기록</h1>
 ${htmlContent}
+<div style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
+  <p>생성일시: ${new Date().toLocaleString('ko-KR')}</p>
+  <p>총 ${records.length}개 레코드</p>
+</div>
 <script>
   // 자동 인쇄 다이얼로그 열기 (PDF로 저장 가능)
   window.onload = function() {
