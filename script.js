@@ -1347,14 +1347,14 @@ Firebase 초기화에 실패했습니다.
           editBtn.className = 'btn edit-btn';
           editBtn.textContent = '수정';
           editBtn.setAttribute('data-id', String(id));
-          
+          /*
           const delBtn = document.createElement('button');
           delBtn.type = 'button';
           delBtn.className = 'btn delete-btn';
           delBtn.textContent = '삭제';
           delBtn.style.marginLeft = '6px';
           delBtn.setAttribute('data-id', String(id));
-          
+          */
           actionsTd.append(editBtn, delBtn);
         }
       }
