@@ -658,8 +658,8 @@
         tbody.appendChild(tr);
       }
 
-      // 페이지네이션 업데이트
-      updatePagination(totalPages);
+      // 페이지네이션 업데이트 - filteredRecords를 매개변수로 전달
+      updatePagination(totalPages, filteredRecords.length);
     }
 
     /** @param {string} dateIso */
@@ -681,8 +681,8 @@
       return (Math.round(hours * 10) / 10).toFixed(1);
     }
 
-    /** @param {number} totalPages */
-    function updatePagination(totalPages) {
+    /** @param {number} totalPages @param {number} totalRecords */
+    function updatePagination(totalPages, totalRecords) {
       if (totalPages <= 1) {
         paginationNav.classList.add("hidden");
         return;
@@ -692,8 +692,8 @@
       
       // 페이지 정보 표시
       const startRecord = currentPage * pageSize + 1;
-      const endRecord = Math.min((currentPage + 1) * pageSize, filteredRecords.length);
-      pageInfo.textContent = `${startRecord}-${endRecord} / ${filteredRecords.length}`;
+      const endRecord = Math.min((currentPage + 1) * pageSize, totalRecords);
+      pageInfo.textContent = `${startRecord}-${endRecord} / ${totalRecords}`;
       
       // 버튼 활성화/비활성화
       prevPageBtn.disabled = currentPage === 0;
