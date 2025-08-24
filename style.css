@@ -296,6 +296,36 @@ input[type="text"] {
   background-color: #f9fafb;
 }
 
+/* 선택된 행 스타일 - 가독성 개선 */
+.data-table tbody tr.selected {
+  background-color: #1e3a8a !important; /* 진한 파란색 배경 */
+  color: #ffffff !important; /* 흰색 텍스트 */
+}
+
+.data-table tbody tr.selected td {
+  color: #ffffff !important; /* 모든 셀의 텍스트를 흰색으로 */
+  border-color: #3b82f6 !important; /* 테두리 색상도 강조 */
+}
+
+.data-table tbody tr.selected:hover {
+  background-color: #1e40af !important; /* 호버 시 더 진한 파란색 */
+}
+
+/* 체크박스가 선택된 행의 스타일 */
+.data-table tbody tr[data-selected="true"] {
+  background-color: #1e3a8a !important;
+  color: #ffffff !important;
+}
+
+.data-table tbody tr[data-selected="true"] td {
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+
+.data-table tbody tr[data-selected="true"]:hover {
+  background-color: #1e40af !important;
+}
+
 .data-table td:first-child {
   width: 40px;
   text-align: center;
