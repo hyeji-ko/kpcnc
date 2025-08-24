@@ -377,7 +377,12 @@
           showStatusMessage('Firebase 원격 DB에 연결되었습니다.', 'success');
         } else {
           console.log('⚠️ 로컬 스토리지 사용 중');
-          showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
+          showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다. 설정 가이드를 확인하세요.', 'warning');
+          
+          // 로컬 스토리지 사용 시 추가 안내
+          setTimeout(() => {
+            showStatusMessage('현재 로컬 스토리지 사용 중 - 데이터는 이 브라우저에만 저장됩니다.', 'info');
+          }, 3000);
         }
       }
     } catch (e) {
