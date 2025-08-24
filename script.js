@@ -369,7 +369,7 @@
             // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
             await recalculateCumulativeFromDate(dateValue);
             
-            // 수정 완료 후 조회 화면으로 이동하고 조회 버튼 활성화
+            // 수정 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
             await showGridAndRefresh();
             return;
           } else {
@@ -399,7 +399,7 @@
         // 등록된 날짜 이후의 모든 데이터에 대해 누적값 재계산
         await recalculateCumulativeFromDate(dateValue);
         
-        // 등록 완료 후 조회 화면으로 이동하고 조회 버튼 활성화
+        // 등록 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
         await showGridAndRefresh();
       } catch (error) {
         console.error('데이터 저장 실패:', error);
@@ -471,7 +471,8 @@
         // 수정된 날짜 이후의 모든 데이터에 대해 누적값 재계산
         await recalculateCumulativeFromDate(rec.date);
         
-        await renderGrid(true); // 현재 페이지 유지
+        // 수정 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
+        await showGridAndRefresh();
       } else if (target.closest('.delete-btn')) {
         const id = target.getAttribute('data-id');
         if (!id) return;
@@ -483,7 +484,8 @@
         // 삭제된 날짜 이후의 모든 데이터에 대해 누적값 재계산
         await recalculateCumulativeFromDate(rec.date);
         
-        await renderGrid(true); // 현재 페이지 유지
+        // 삭제 완료 후 자동으로 조회 화면으로 이동하고 조회 버튼 활성화
+        await showGridAndRefresh();
       }
     });
 
@@ -1125,10 +1127,10 @@ Firebase 초기화에 실패했습니다.
       // 조회 화면으로 이동
       showGrid();
       
-      // 데이터 새로고침
-      await renderGrid(false); // 현재일자 페이지로 이동
+      // 데이터 새로고침 (현재일자 페이지로 이동)
+      await renderGrid(false);
       
-      // 조회 버튼 활성화 (showGrid에서 이미 처리되지만 확실히 하기 위해)
+      // 조회 버튼 활성화
       clearActiveButtons();
       listBtn.classList.add('active');
       
@@ -1136,6 +1138,8 @@ Firebase 초기화에 실패했습니다.
       setTimeout(() => {
         clearUploadMessage();
       }, 3000);
+      
+      console.log('자동 조회 화면 이동 완료 - 갱신된 데이터 표시');
     }
 
     /**
