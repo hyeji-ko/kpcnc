@@ -494,6 +494,10 @@
       if (typeof DB.init === "function") {
         console.log('Firebase DB 초기화 시작...');
         
+        // 모바일 환경 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('모바일 환경 감지:', isMobile);
+        
         // Firebase 상태 확인
         const firebaseStatus = window.checkFirebaseStatus();
         console.log('Firebase 상태:', firebaseStatus);
@@ -501,13 +505,14 @@
         if (!firebaseStatus.initialized) {
           console.log('Firebase가 초기화되지 않았습니다. 초기화를 시도합니다...');
           
-          // Firebase 초기화 대기
+          // 모바일에서는 더 긴 대기 시간 설정
           let attempts = 0;
-          const maxAttempts = 20; // 최대 10초 대기
+          const maxAttempts = isMobile ? 30 : 20; // 모바일: 15초, PC: 10초
+          const waitTime = isMobile ? 1000 : 500; // 모바일: 1초, PC: 0.5초
           
           while (!firebaseStatus.initialized && attempts < maxAttempts) {
-            console.log(`Firebase 초기화 대기 중... (${attempts + 1}/${maxAttempts})`);
-            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log(`Firebase 초기화 대기 중... (${attempts + 1}/${maxAttempts}) - ${isMobile ? '모바일' : 'PC'} 환경`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
             attempts++;
             
             // 상태 재확인
@@ -515,11 +520,12 @@
           }
           
           if (!firebaseStatus.initialized) {
-            console.warn('Firebase 초기화 시간 초과 (10초)');
+            console.warn(`Firebase 초기화 시간 초과 (${isMobile ? '15초' : '10초'})`);
             console.log('Firebase 상태:', window.checkFirebaseStatus());
             
             // Firebase 초기화 실패 시 사용자에게 알림
-            showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
+            const deviceType = isMobile ? '모바일' : 'PC';
+            showStatusMessage(`Firebase 연결 실패로 로컬 스토리지를 사용합니다. (${deviceType})`, 'warning');
           }
         }
         
@@ -529,28 +535,36 @@
         // DB 상태 표시
         if (DB.isRemote) {
           console.log('✅ Firebase 원격 DB 사용 중');
-          showStatusMessage('Firebase 원격 DB에 연결되었습니다.', 'success');
+          const deviceType = isMobile ? '모바일' : 'PC';
+          showStatusMessage(`Firebase 원격 DB에 연결되었습니다. (${deviceType})`, 'success');
         } else {
           console.log('⚠️ 로컬 스토리지 사용 중');
-          showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다. 설정 가이드를 확인하세요.', 'warning');
+          const deviceType = isMobile ? '모바일' : 'PC';
+          showStatusMessage(`Firebase 연결 실패로 로컬 스토리지를 사용합니다. (${deviceType}) 설정 가이드를 확인하세요.`, 'warning');
           
           // 로컬 스토리지 사용 시 추가 안내
           setTimeout(() => {
-            showStatusMessage('현재 로컬 스토리지 사용 중 - 데이터는 이 브라우저에만 저장됩니다.', 'info');
+            const deviceType = isMobile ? '모바일' : 'PC';
+            showStatusMessage(`현재 로컬 스토리지 사용 중 (${deviceType}) - 데이터는 이 브라우저에만 저장됩니다.`, 'info');
           }, 3000);
         }
       }
     } catch (e) {
       console.error("Firebase DB 초기화 실패:", e);
       
+      // 모바일 환경 감지
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const deviceType = isMobile ? '모바일' : 'PC';
+      
       // 사용자에게 친화적인 에러 메시지 표시
       const errorMessage = `
-Firebase 초기화에 실패했습니다.
+Firebase 초기화에 실패했습니다. (${deviceType})
 
 가능한 원인:
 1. 인터넷 연결 확인
 2. Firebase 프로젝트 설정 확인
 3. 브라우저 캐시 삭제 후 재시도
+4. ${isMobile ? '모바일 브라우저 호환성 확인' : 'PC 브라우저 호환성 확인'}
 
 에러 상세: ${e.message}
       `;
@@ -559,7 +573,7 @@ Firebase 초기화에 실패했습니다.
       
       // 에러가 발생해도 앱은 계속 실행되도록 함
       console.warn('Firebase 초기화 실패로 인해 앱이 제한된 기능으로 실행됩니다.');
-      showStatusMessage('Firebase 연결 실패로 로컬 스토리지를 사용합니다.', 'warning');
+      showStatusMessage(`Firebase 연결 실패로 로컬 스토리지를 사용합니다. (${deviceType})`, 'warning');
     }
 
     // Init view: show grid by default
@@ -1181,24 +1195,34 @@ function showStatusMessage(message, type = 'info') {
     existingStatus.remove();
   }
   
+  // 모바일 환경 감지
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
   // 새 상태 메시지 생성
   const statusDiv = document.createElement('div');
   statusDiv.className = `status-message status-${type}`;
-  statusDiv.textContent = message;
+  
+  // 모바일에서는 더 간단한 메시지 표시
+  if (isMobile) {
+    statusDiv.textContent = `${message} (모바일)`;
+  } else {
+    statusDiv.textContent = message;
+  }
   
   // 스타일 적용
   statusDiv.style.cssText = `
     position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 12px 20px;
+    top: ${isMobile ? '10px' : '20px'};
+    right: ${isMobile ? '10px' : '20px'};
+    padding: ${isMobile ? '8px 16px' : '12px 20px'};
     border-radius: 8px;
     color: white;
     font-weight: bold;
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    max-width: 300px;
+    max-width: ${isMobile ? '250px' : '300px'};
     word-wrap: break-word;
+    font-size: ${isMobile ? '14px' : '16px'};
   `;
   
   // 타입별 색상
@@ -1215,12 +1239,13 @@ function showStatusMessage(message, type = 'info') {
   // 페이지에 추가
   document.body.appendChild(statusDiv);
   
-  // 5초 후 자동 제거
+  // 모바일에서는 더 짧은 시간 표시
+  const displayTime = isMobile ? 3000 : 5000;
   setTimeout(() => {
     if (statusDiv.parentNode) {
       statusDiv.remove();
     }
-  }, 5000);
+  }, displayTime);
 }
 
 /**
