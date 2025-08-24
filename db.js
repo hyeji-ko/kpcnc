@@ -97,16 +97,12 @@ async function getRemoteImpl() {
     const db = firebase.firestore();
     console.log('Firestore 인스턴스 생성됨');
     
-    // Firestore 설정 재확인 (WebChannel 오류 방지)
-    const settings = {
-      cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-      experimentalForceLongPolling: true,
-      useFetchStreams: false,
-      ignoreUndefinedProperties: true
-    };
-    
-    db.settings(settings);
-    console.log('Firestore 설정 재적용됨:', settings);
+    // Firestore 설정은 이미 config.js에서 적용됨
+    if (!window.FIRESTORE_CONFIGURED) {
+      console.warn('Firestore 설정이 아직 적용되지 않았습니다. config.js에서 설정을 확인하세요.');
+    } else {
+      console.log('Firestore 설정이 이미 적용되어 있습니다.');
+    }
     
     // 익명 인증 시도
     console.log('익명 인증 시도...');
