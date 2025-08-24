@@ -6,6 +6,7 @@
     const registerBtn = document.getElementById("registerBtn");
     const listBtn = document.getElementById("listBtn");
     const uploadBtn = document.getElementById("uploadBtn");
+    const batchDeleteBtn = document.getElementById("batchDeleteBtn");
     const formSection = document.getElementById("formSection");
     const gridSection = document.getElementById("gridSection");
     const uploadSection = document.getElementById("uploadSection");
@@ -30,20 +31,11 @@
     const yearItems = document.querySelectorAll('.year-item');
 
     // Firebase 원격 DB만 사용
-    const DB = window.DB || {
-      async init() { 
-        console.error('DB 모듈이 로드되지 않았습니다. Firebase 설정을 확인해주세요.');
-        throw new Error('DB 모듈이 로드되지 않았습니다.');
-      },
-      async loadRecords() {
-        console.error('DB 모듈이 로드되지 않았습니다. Firebase 설정을 확인해주세요.');
-        throw new Error('DB 모듈이 로드되지 않았습니다.');
-      },
-      async addRecord(record) {
-        console.error('DB 모듈이 로드되지 않았습니다. Firebase 설정을 확인해주세요.');
-        throw new Error('DB 모듈이 로드되지 않았습니다.');
-      }
-    };
+    const DB = window.DB;
+    if (!DB) {
+      console.error('DB 모듈이 로드되지 않았습니다. Firebase 설정을 확인해주세요.');
+      throw new Error('DB 모듈이 로드되지 않았습니다.');
+    }
 
     const selectedIds = new Set();
     
@@ -143,6 +135,38 @@
       await renderGrid();
     });
     
+    // 일괄삭제 버튼 이벤트 리스너
+    batchDeleteBtn.addEventListener("click", async () => {
+      const confirmDelete = window.confirm('Firebase에 저장된 모든 데이터를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.');
+      if (!confirmDelete) return;
+      
+      try {
+        // 모든 레코드 로드
+        const allRecords = await DB.loadRecords();
+        if (allRecords.length === 0) {
+          alert('삭제할 데이터가 없습니다.');
+          return;
+        }
+        
+        // 삭제 진행
+        let deletedCount = 0;
+        for (const record of allRecords) {
+          if (record.id) {
+            await DB.deleteRecord(record.id);
+            deletedCount++;
+          }
+        }
+        
+        alert(`${deletedCount}개의 데이터가 성공적으로 삭제되었습니다.`);
+        
+        // 삭제 후 조회 화면으로 이동
+        await showGridAndRefresh();
+      } catch (error) {
+        console.error('일괄삭제 실패:', error);
+        alert(`삭제 실패: ${error.message}`);
+      }
+    });
+
     // 페이지네이션 버튼 이벤트 리스너
     prevPageBtn.addEventListener("click", async () => {
       if (currentPage > 0) {
@@ -346,7 +370,9 @@
         await DB.init();
       }
     } catch (e) {
-      console.warn("DB init failed, continuing with local fallback if available", e);
+      console.error("Firebase DB 초기화 실패:", e);
+      alert(`Firebase 초기화 실패: ${e.message}\n\nconfig.js 파일의 Firebase 설정을 확인해주세요.`);
+      return;
     }
 
     // Init view: show grid by default
@@ -356,10 +382,17 @@
     // 초기 로드 시 조회 버튼 활성화
     listBtn.classList.add('active');
     
+    // 초기 로드 시 모든 버튼 활성화
+    registerBtn.disabled = false;
+    listBtn.disabled = false;
+    uploadBtn.disabled = false;
+    batchDeleteBtn.disabled = false;
+    
     try {
       await renderGrid();
     } catch (e) {
-      console.warn("Initial render failed", e);
+      console.error("초기 데이터 로드 실패:", e);
+      alert(`데이터 로드 실패: ${e.message}\n\nFirebase 연결을 확인해주세요.`);
     }
 
     function showForm() {
@@ -379,6 +412,12 @@
       // 등록 버튼 활성화
       clearActiveButtons();
       registerBtn.classList.add('active');
+      
+      // 모든 버튼 활성화
+      registerBtn.disabled = false;
+      listBtn.disabled = false;
+      uploadBtn.disabled = false;
+      batchDeleteBtn.disabled = false;
     }
 
     function showGrid() {
@@ -398,6 +437,10 @@
       // 조회 버튼 활성화
       clearActiveButtons();
       listBtn.classList.add('active');
+      
+      // 등록버튼과 일괄삭제 버튼 비활성화
+      registerBtn.disabled = true;
+      batchDeleteBtn.disabled = true;
     }
 
     function showUpload() {
@@ -412,12 +455,19 @@
       // 업로드 버튼 활성화
       clearActiveButtons();
       uploadBtn.classList.add('active');
+      
+      // 모든 버튼 활성화
+      registerBtn.disabled = false;
+      listBtn.disabled = false;
+      uploadBtn.disabled = false;
+      batchDeleteBtn.disabled = false;
     }
 
     function clearActiveButtons() {
       registerBtn.classList.remove('active');
       listBtn.classList.remove('active');
       uploadBtn.classList.remove('active');
+      batchDeleteBtn.classList.remove('active');
     }
 
     /** @param {string} value */
