@@ -92,13 +92,16 @@ async function getRemoteImpl() {
     // Firestore 인스턴스 가져오기
     const db = firebase.firestore();
     
-    // 간단한 연결 테스트
+    // 간단한 연결 테스트 - 실제 데이터 작업으로 확인
     try {
-      await db.collection('_test').limit(1).get();
+      // 테스트용 임시 문서 생성 및 삭제
+      const testDoc = db.collection('_connection_test').doc('test');
+      await testDoc.set({ timestamp: new Date() });
+      await testDoc.delete();
       console.log('Firestore 연결 테스트 성공');
     } catch (testError) {
       console.warn('Firestore 연결 테스트 실패:', testError.message);
-      // 연결 테스트 실패해도 계속 진행
+      // 연결 테스트 실패해도 계속 진행 (권한 문제일 수 있음)
     }
     
     return {
