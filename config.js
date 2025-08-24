@@ -14,6 +14,7 @@ window.firebaseConfig = window.FIREBASE_CONFIG;
 // Firebase 초기화 상태 확인
 window.FIREBASE_INITIALIZED = false;
 window.FIREBASE_ERROR = null;
+window.FIRESTORE_CONFIGURED = false;
 
 // Firebase 초기화 함수
 window.initializeFirebase = async function() {
@@ -33,21 +34,26 @@ window.initializeFirebase = async function() {
       console.log('Firebase 앱 초기화 완료');
     }
 
-    // Firestore 초기화 및 설정
+    // Firestore 인스턴스 가져오기
     const db = firebase.firestore();
     
-    // Firestore 설정 - WebChannel 오류 방지
-    const settings = {
-      cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-      experimentalForceLongPolling: true,
-      useFetchStreams: false,
-      ignoreUndefinedProperties: true
-    };
+    // Firestore 설정 - 한 번만 적용
+    if (!window.FIRESTORE_CONFIGURED) {
+      const settings = {
+        cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+        experimentalForceLongPolling: true,
+        useFetchStreams: false,
+        ignoreUndefinedProperties: true
+      };
+      
+      db.settings(settings);
+      window.FIRESTORE_CONFIGURED = true;
+      console.log('Firestore 설정 적용됨:', settings);
+    } else {
+      console.log('Firestore 설정이 이미 적용되어 있습니다.');
+    }
     
-    db.settings(settings);
-    console.log('Firestore 설정 적용됨:', settings);
-    
-    // 연결 테스트
+    // 연결 테스트 (설정 후에만)
     try {
       await db.collection('_test').limit(1).get();
       console.log('Firestore 연결 테스트 성공');
@@ -73,7 +79,8 @@ window.checkFirebaseStatus = function() {
   return {
     initialized: window.FIREBASE_INITIALIZED,
     error: window.FIREBASE_ERROR,
-    config: window.FIREBASE_CONFIG
+    config: window.FIREBASE_CONFIG,
+    firestoreConfigured: window.FIRESTORE_CONFIGURED
   };
 };
 
