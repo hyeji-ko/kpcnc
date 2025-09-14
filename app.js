@@ -5009,22 +5009,41 @@ class SeminarPlanningApp {
             modal.classList.add('hidden');
             modal.classList.remove('show');
             
-            // 직원명부 모달이 열려있는지 확인하고 다시 활성화
-            const employeeModal = document.getElementById('employeeModal');
-            if (employeeModal && !employeeModal.classList.contains('hidden')) {
-                // 직원명부 모달이 열려있다면 포커스를 다시 설정
-                employeeModal.style.zIndex = '50';
-                employeeModal.style.display = 'flex';
-                
-                // 직원명부 모달의 입력 필드에 포커스 설정
-                const nameInput = document.getElementById('employeeName');
-                if (nameInput) {
-                    setTimeout(() => {
-                        nameInput.focus();
-                    }, 100);
-                }
-            }
+            // 직원명부 모달 강제 재활성화
+            this.reactivateEmployeeModal();
         }, 300);
+    }
+    
+    // 직원명부 모달 재활성화
+    reactivateEmployeeModal() {
+        const employeeModal = document.getElementById('employeeModal');
+        
+        if (employeeModal) {
+            // 직원명부 모달 강제 표시
+            employeeModal.classList.remove('hidden');
+            employeeModal.style.display = 'flex';
+            employeeModal.style.zIndex = '50';
+            employeeModal.style.opacity = '1';
+            
+            // 직원명부 모달 컨텐츠도 활성화
+            const modalContent = employeeModal.querySelector('.employee-modal-content');
+            if (modalContent) {
+                modalContent.style.opacity = '1';
+                modalContent.style.transform = 'scale(1)';
+            }
+            
+            // 성명 입력 필드에 포커스 설정
+            const nameInput = document.getElementById('employeeName');
+            if (nameInput) {
+                setTimeout(() => {
+                    nameInput.focus();
+                    // 한글 입력 모드 설정
+                    this.setKoreanInputMode(nameInput);
+                }, 200);
+            }
+            
+            console.log('직원명부 모달 재활성화 완료');
+        }
     }
     
     // 한글 입력 토글 설정
