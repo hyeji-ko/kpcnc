@@ -4723,8 +4723,12 @@ class SeminarPlanningApp {
         
         let isValid = true;
         
-        if (!employee.name || !employee.position || !employee.department || !employee.work || !employee.email) {
-            alert('직원명부를 입력하세요.');
+        // 성명과 이메일만 필수 체크
+        if (!employee.name) {
+            alert('성명을 입력해주세요.');
+            isValid = false;
+        } else if (!employee.email) {
+            alert('이메일을 입력해주세요.');
             isValid = false;
         } else if (!this.isValidEmail(employee.email)) {
             alert('올바른 이메일 형식을 입력해주세요.');
@@ -4823,7 +4827,8 @@ class SeminarPlanningApp {
         
         this.currentData.attendeeList.push(newAttendee);
         this.populateAttendeeTable();
-        //alert(`${employee.name}님이 참석자 명단에 추가되었습니다.`);
+        //
+        // alert(`${employee.name}님이 참석자 명단에 추가되었습니다.`);
         
         // 모달 닫기
         this.hideEmployeeModal();
