@@ -5031,10 +5031,47 @@ class SeminarPlanningApp {
     setKoreanInputMode(input) {
         // IME 상태를 한글로 설정
         input.setAttribute('lang', 'ko');
+        input.setAttribute('inputmode', 'text');
         input.style.imeMode = 'active';
+        input.style.fontFamily = "'Malgun Gothic', '맑은 고딕', sans-serif";
+        
+        // 한글 입력을 위한 추가 속성 설정
+        input.setAttribute('data-korean-mode', 'true');
         
         // 입력 힌트 표시
         this.showKoreanInputHint(input);
+        
+        // 사용자에게 한글 입력 안내
+        this.showKoreanInputGuide(input);
+    }
+    
+    // 한글 입력 안내 표시
+    showKoreanInputGuide(input) {
+        // 기존 안내 제거
+        const existingGuide = input.parentNode.querySelector('.korean-guide');
+        if (existingGuide) {
+            existingGuide.remove();
+        }
+        
+        // 새 안내 생성
+        const guide = document.createElement('div');
+        guide.className = 'korean-guide text-xs text-orange-500 mt-1 font-semibold';
+        guide.innerHTML = '💡 한글 입력을 위해 키보드 한/영 키를 눌러주세요';
+        guide.style.opacity = '0.8';
+        
+        input.parentNode.appendChild(guide);
+        
+        // 5초 후 안내 제거
+        setTimeout(() => {
+            if (guide.parentNode) {
+                guide.style.opacity = '0';
+                setTimeout(() => {
+                    if (guide.parentNode) {
+                        guide.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
     }
     
     // 한글 입력 처리
@@ -5042,6 +5079,7 @@ class SeminarPlanningApp {
         // 한글 입력 중인지 확인
         if (e.isComposing || e.keyCode === 229) {
             // IME 입력 중
+            input.setAttribute('data-composing', 'true');
             return;
         }
         
@@ -5056,12 +5094,15 @@ class SeminarPlanningApp {
             (keyCode >= 44032 && keyCode <= 55203)) { // 한글 완성형
             // 한글 입력이 감지되면 IME 모드 활성화
             input.style.imeMode = 'active';
+            input.setAttribute('data-composing', 'true');
         }
     }
     
     // 한글 입력 모드 해제
     clearKoreanInputMode(input) {
         input.style.imeMode = 'auto';
+        input.removeAttribute('data-korean-mode');
+        input.removeAttribute('data-composing');
     }
     
     // 한글 입력 힌트 표시
