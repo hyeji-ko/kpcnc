@@ -497,6 +497,20 @@
     margin: 0 auto;
 }
 
+/* 직원명부용 커스텀 모달 */
+#employeeCustomModal {
+    z-index: 60;
+}
+
+#employeeCustomModal.show {
+    display: flex !important;
+}
+
+#employeeCustomModal.show .modal-container {
+    transform: scale(1);
+    opacity: 1;
+}
+
 .modal-content {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
     backdrop-filter: blur(20px);

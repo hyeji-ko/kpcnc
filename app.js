@@ -152,10 +152,22 @@ class SeminarPlanningApp {
             }
         });
         
+        // 직원명부용 커스텀 모달 이벤트
+        document.getElementById('employeeModalConfirmBtn').addEventListener('click', () => this.hideEmployeeCustomModal());
+        document.getElementById('employeeCustomModal').addEventListener('click', (e) => {
+            if (e.target.id === 'employeeCustomModal') {
+                this.hideEmployeeCustomModal();
+            }
+        });
+        
         // ESC 키로 모달 닫기
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !document.getElementById('customModal').classList.contains('hidden')) {
-                this.hideCustomModal();
+            if (e.key === 'Escape') {
+                if (!document.getElementById('customModal').classList.contains('hidden')) {
+                    this.hideCustomModal();
+                } else if (!document.getElementById('employeeCustomModal').classList.contains('hidden')) {
+                    this.hideEmployeeCustomModal();
+                }
             }
         });
         
@@ -4740,13 +4752,13 @@ class SeminarPlanningApp {
         
         // 성명과 이메일만 필수 체크
         if (!employee.name) {
-            this.showCustomModal('성명을 입력해주세요.', 'warning', 'fas fa-exclamation-triangle');
+            this.showEmployeeCustomModal('성명을 입력해주세요.', 'warning', 'fas fa-exclamation-triangle');
             isValid = false;
         } else if (!employee.email) {
-            this.showCustomModal('이메일을 입력해주세요.', 'warning', 'fas fa-exclamation-triangle');
+            this.showEmployeeCustomModal('이메일을 입력해주세요.', 'warning', 'fas fa-exclamation-triangle');
             isValid = false;
         } else if (!this.isValidEmail(employee.email)) {
-            this.showCustomModal('올바른 이메일 형식을 입력해주세요.', 'error', 'fas fa-times-circle');
+            this.showEmployeeCustomModal('올바른 이메일 형식을 입력해주세요.', 'error', 'fas fa-times-circle');
             isValid = false;
         }
         
@@ -4827,7 +4839,7 @@ class SeminarPlanningApp {
         
         if (existingAttendee) {
             console.log('중복된 직원 발견:', existingAttendee);
-            this.showCustomModal('이미 참석자 명단에 등록된 직원입니다.', 'warning', 'fas fa-exclamation-triangle');
+            this.showEmployeeCustomModal('이미 참석자 명단에 등록된 직원입니다.', 'warning', 'fas fa-exclamation-triangle');
             return;
         }
         
@@ -4854,7 +4866,7 @@ class SeminarPlanningApp {
         const searchTerm = document.getElementById('employeeSearchInput').value.trim();
         
         if (!searchTerm) {
-            this.showCustomModal('검색할 성명을 입력해주세요.', 'warning', 'fas fa-search');
+            this.showEmployeeCustomModal('검색할 성명을 입력해주세요.', 'warning', 'fas fa-search');
             return;
         }
         
@@ -4867,9 +4879,9 @@ class SeminarPlanningApp {
         this.renderEmployeeTable();
         
         if (this.filteredEmployeeList.length === 0) {
-            this.showCustomModal(`'${searchTerm}'에 해당하는 직원을 찾을 수 없습니다.`, 'warning', 'fas fa-search');
+            this.showEmployeeCustomModal(`'${searchTerm}'에 해당하는 직원을 찾을 수 없습니다.`, 'warning', 'fas fa-search');
         } else {
-            this.showCustomModal(`'${searchTerm}' 검색 결과: ${this.filteredEmployeeList.length}명의 직원을 찾았습니다.`, 'success', 'fas fa-check-circle');
+            this.showEmployeeCustomModal(`'${searchTerm}' 검색 결과: ${this.filteredEmployeeList.length}명의 직원을 찾았습니다.`, 'success', 'fas fa-check-circle');
         }
     }
     
@@ -4920,6 +4932,56 @@ class SeminarPlanningApp {
     // 커스텀 모달 숨기기
     hideCustomModal() {
         const modal = document.getElementById('customModal');
+        const container = modal.querySelector('.modal-container');
+        
+        container.style.transform = 'scale(0.95)';
+        container.style.opacity = '0';
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('show');
+        }, 300);
+    }
+    
+    // 직원명부용 커스텀 모달 표시
+    showEmployeeCustomModal(message, type = 'info', icon = 'fas fa-info-circle') {
+        const modal = document.getElementById('employeeCustomModal');
+        const modalIcon = document.getElementById('employeeModalIcon');
+        const modalTitle = document.getElementById('employeeModalTitle');
+        const modalMessage = document.getElementById('employeeModalMessage');
+        const iconContainer = modal.querySelector('.modal-icon');
+        
+        // 아이콘 설정
+        modalIcon.className = icon;
+        
+        // 타입별 제목 설정
+        const titles = {
+            'success': '성공',
+            'error': '오류',
+            'warning': '경고',
+            'info': '알림'
+        };
+        
+        modalTitle.textContent = titles[type] || '알림';
+        modalMessage.textContent = message;
+        
+        // 아이콘 컨테이너 클래스 설정
+        iconContainer.className = `modal-icon ${type}`;
+        
+        // 모달 표시
+        modal.classList.remove('hidden');
+        modal.classList.add('show');
+        
+        // 애니메이션을 위한 약간의 지연
+        setTimeout(() => {
+            modal.querySelector('.modal-container').style.transform = 'scale(1)';
+            modal.querySelector('.modal-container').style.opacity = '1';
+        }, 10);
+    }
+    
+    // 직원명부용 커스텀 모달 숨기기
+    hideEmployeeCustomModal() {
+        const modal = document.getElementById('employeeCustomModal');
         const container = modal.querySelector('.modal-container');
         
         container.style.transform = 'scale(0.95)';
