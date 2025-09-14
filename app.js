@@ -4820,7 +4820,7 @@ class SeminarPlanningApp {
             position: employee.position,
             department: employee.department,
             work: employee.work,
-            attendance: '참석'
+            attendance: 'N'
         };
         
         this.currentData.attendeeList.push(newAttendee);
