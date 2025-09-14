@@ -5008,6 +5008,22 @@ class SeminarPlanningApp {
         setTimeout(() => {
             modal.classList.add('hidden');
             modal.classList.remove('show');
+            
+            // 직원명부 모달이 열려있는지 확인하고 다시 활성화
+            const employeeModal = document.getElementById('employeeModal');
+            if (employeeModal && !employeeModal.classList.contains('hidden')) {
+                // 직원명부 모달이 열려있다면 포커스를 다시 설정
+                employeeModal.style.zIndex = '50';
+                employeeModal.style.display = 'flex';
+                
+                // 직원명부 모달의 입력 필드에 포커스 설정
+                const nameInput = document.getElementById('employeeName');
+                if (nameInput) {
+                    setTimeout(() => {
+                        nameInput.focus();
+                    }, 100);
+                }
+            }
         }, 300);
     }
     
