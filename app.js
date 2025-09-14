@@ -4505,6 +4505,10 @@ class SeminarPlanningApp {
     async showEmployeeModal() {
         const modal = document.getElementById('employeeModal');
         modal.classList.remove('hidden');
+        
+        // 배경 스크롤 막기
+        this.disableBodyScroll();
+        
         await this.loadEmployeeData();
         this.resetEmployeeForm();
     }
@@ -4513,7 +4517,23 @@ class SeminarPlanningApp {
     hideEmployeeModal() {
         const modal = document.getElementById('employeeModal');
         modal.classList.add('hidden');
+        
+        // 배경 스크롤 다시 활성화
+        this.enableBodyScroll();
+        
         this.resetEmployeeForm();
+    }
+    
+    // 배경 스크롤 비활성화
+    disableBodyScroll() {
+        document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = '0px';
+    }
+    
+    // 배경 스크롤 활성화
+    enableBodyScroll() {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
     }
     
     // 직원 데이터 로드
