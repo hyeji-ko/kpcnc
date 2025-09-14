@@ -14,7 +14,9 @@ class SeminarPlanningApp {
         
         // 직원명부 데이터
         this.employeeList = [];
+        this.filteredEmployeeList = [];
         this.selectedEmployeeIndex = -1;
+        this.isSearchMode = false;
         
         this.currentDocumentId = null; // Firebase 문서 ID 저장
         this.originalSession = null; // 원본 회차 저장
@@ -139,6 +141,8 @@ class SeminarPlanningApp {
         document.getElementById('addEmployee').addEventListener('click', () => this.addEmployee());
         document.getElementById('updateEmployee').addEventListener('click', () => this.updateEmployee());
         document.getElementById('deleteEmployee').addEventListener('click', () => this.deleteEmployee());
+        document.getElementById('searchEmployeeBtn').addEventListener('click', () => this.searchEmployees());
+        document.getElementById('clearSearchBtn').addEventListener('click', () => this.clearEmployeeSearch());
         
         // 스케치 관련 이벤트 위임
         document.addEventListener('click', (e) => {
@@ -4543,7 +4547,9 @@ class SeminarPlanningApp {
         const tbody = document.getElementById('employeeTableBody');
         tbody.innerHTML = '';
         
-        this.employeeList.forEach((employee, index) => {
+        const displayList = this.isSearchMode ? this.filteredEmployeeList : this.employeeList;
+        
+        displayList.forEach((employee, index) => {
             const row = document.createElement('tr');
             row.className = 'employee-table-row';
             row.innerHTML = `
@@ -4586,6 +4592,9 @@ class SeminarPlanningApp {
         
         this.selectedEmployeeIndex = -1;
         this.clearEmployeeFormValidation();
+        
+        // 검색 모드 초기화
+        this.clearEmployeeSearch();
     }
     
     // 직원 추가
@@ -4794,9 +4803,7 @@ class SeminarPlanningApp {
         
         // 중복 확인 (공백 제거 및 대소문자 무시)
         const existingAttendee = this.currentData.attendeeList.find(attendee => 
-            attendee.name && attendee.position && 
-            attendee.name.trim().toLowerCase() === employee.name.trim().toLowerCase() && 
-            attendee.position.trim().toLowerCase() === employee.position.trim().toLowerCase()
+            attendee.name === employee.name && attendee.position === employee.position
         );
         
         if (existingAttendee) {
@@ -4816,10 +4823,42 @@ class SeminarPlanningApp {
         
         this.currentData.attendeeList.push(newAttendee);
         this.populateAttendeeTable();
-        alert(`${employee.name}님이 참석자 명단에 추가되었습니다.`);
+        //alert(`${employee.name}님이 참석자 명단에 추가되었습니다.`);
         
         // 모달 닫기
         this.hideEmployeeModal();
+    }
+    
+    // 직원 검색
+    searchEmployees() {
+        const searchTerm = document.getElementById('employeeSearchInput').value.trim();
+        
+        if (!searchTerm) {
+            alert('검색할 성명을 입력해주세요.');
+            return;
+        }
+        
+        // 성명으로 검색 (대소문자 무시, 부분 일치)
+        this.filteredEmployeeList = this.employeeList.filter(employee => 
+            employee.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        this.isSearchMode = true;
+        this.renderEmployeeTable();
+        
+        if (this.filteredEmployeeList.length === 0) {
+            alert(`'${searchTerm}'에 해당하는 직원을 찾을 수 없습니다.`);
+        } else {
+            alert(`'${searchTerm}' 검색 결과: ${this.filteredEmployeeList.length}명의 직원을 찾았습니다.`);
+        }
+    }
+    
+    // 직원 검색 초기화
+    clearEmployeeSearch() {
+        document.getElementById('employeeSearchInput').value = '';
+        this.isSearchMode = false;
+        this.filteredEmployeeList = [];
+        this.renderEmployeeTable();
     }
 } 
 
