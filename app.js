@@ -4815,8 +4815,11 @@ class SeminarPlanningApp {
         };
         
         this.currentData.attendeeList.push(newAttendee);
-        this.renderAttendeeTable();
+        this.populateAttendeeTable();
         this.showToast(`${employee.name}님이 참석자 명단에 추가되었습니다.`, 'success');
+        
+        // 모달 닫기
+        this.hideEmployeeModal();
     }
 } 
 
