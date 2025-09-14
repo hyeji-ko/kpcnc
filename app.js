@@ -5002,7 +5002,8 @@ class SeminarPlanningApp {
             'employeeName',
             'employeePosition', 
             'employeeDepartment',
-            'employeeWork'
+            'employeeWork',
+            'employeeSearchInput'
         ];
         
         koreanInputFields.forEach(fieldId => {
