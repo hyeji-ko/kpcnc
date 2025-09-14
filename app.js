@@ -160,6 +160,9 @@ class SeminarPlanningApp {
             }
         });
         
+        // 직원명부 입력 필드 한글 토글 이벤트
+        this.setupKoreanInputToggle();
+        
         // ESC 키로 모달 닫기
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -4991,6 +4994,102 @@ class SeminarPlanningApp {
             modal.classList.add('hidden');
             modal.classList.remove('show');
         }, 300);
+    }
+    
+    // 한글 입력 토글 설정
+    setupKoreanInputToggle() {
+        const koreanInputFields = [
+            'employeeName',
+            'employeePosition', 
+            'employeeDepartment',
+            'employeeWork'
+        ];
+        
+        koreanInputFields.forEach(fieldId => {
+            const input = document.getElementById(fieldId);
+            if (input) {
+                // 포커스 시 한글 모드로 설정
+                input.addEventListener('focus', () => {
+                    this.setKoreanInputMode(input);
+                });
+                
+                // 키 입력 시 한글 모드 유지
+                input.addEventListener('keydown', (e) => {
+                    this.handleKoreanInput(e, input);
+                });
+                
+                // 입력 완료 시 한글 모드 해제
+                input.addEventListener('blur', () => {
+                    this.clearKoreanInputMode(input);
+                });
+            }
+        });
+    }
+    
+    // 한글 입력 모드 설정
+    setKoreanInputMode(input) {
+        // IME 상태를 한글로 설정
+        input.setAttribute('lang', 'ko');
+        input.style.imeMode = 'active';
+        
+        // 입력 힌트 표시
+        this.showKoreanInputHint(input);
+    }
+    
+    // 한글 입력 처리
+    handleKoreanInput(e, input) {
+        // 한글 입력 중인지 확인
+        if (e.isComposing || e.keyCode === 229) {
+            // IME 입력 중
+            return;
+        }
+        
+        // 특수 키는 무시
+        if (e.ctrlKey || e.altKey || e.metaKey) {
+            return;
+        }
+        
+        // 한글 자모음 범위 확인
+        const keyCode = e.keyCode;
+        if ((keyCode >= 12593 && keyCode <= 12622) || // 한글 자모
+            (keyCode >= 44032 && keyCode <= 55203)) { // 한글 완성형
+            // 한글 입력이 감지되면 IME 모드 활성화
+            input.style.imeMode = 'active';
+        }
+    }
+    
+    // 한글 입력 모드 해제
+    clearKoreanInputMode(input) {
+        input.style.imeMode = 'auto';
+    }
+    
+    // 한글 입력 힌트 표시
+    showKoreanInputHint(input) {
+        // 기존 힌트 제거
+        const existingHint = input.parentNode.querySelector('.korean-hint');
+        if (existingHint) {
+            existingHint.remove();
+        }
+        
+        // 새 힌트 생성
+        const hint = document.createElement('div');
+        hint.className = 'korean-hint text-xs text-blue-500 mt-1';
+        hint.textContent = '한글 입력 모드';
+        hint.style.opacity = '0.7';
+        
+        input.parentNode.appendChild(hint);
+        
+        // 3초 후 힌트 제거
+        setTimeout(() => {
+            if (hint.parentNode) {
+                hint.style.opacity = '0';
+                setTimeout(() => {
+                    if (hint.parentNode) {
+                        hint.remove();
+                    }
+                }, 300);
+            }
+        }, 3000);
     }
 } 
 

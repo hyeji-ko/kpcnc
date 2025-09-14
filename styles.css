@@ -676,6 +676,23 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+/* 한글 입력 힌트 스타일 */
+.korean-hint {
+    transition: opacity 0.3s ease;
+    font-weight: 500;
+    color: #3b82f6;
+}
+
+.korean-hint::before {
+    content: "🔤 ";
+    margin-right: 4px;
+}
+
+/* 한글 입력 필드 스타일 */
+input[lang="ko"] {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 640px) {
     .modal-container {
