@@ -4784,12 +4784,23 @@ class SeminarPlanningApp {
     
     // 직원을 참석자 명단에 추가
     addEmployeeToAttendeeList(employee) {
-        // 중복 확인
+        // 참석자 명단 초기화 확인
+        if (!this.currentData.attendeeList) {
+            this.currentData.attendeeList = [];
+        }
+        
+        console.log('현재 참석자 명단:', this.currentData.attendeeList);
+        console.log('추가하려는 직원:', employee);
+        
+        // 중복 확인 (공백 제거 및 대소문자 무시)
         const existingAttendee = this.currentData.attendeeList.find(attendee => 
-            attendee.name === employee.name && attendee.position === employee.position
+            attendee.name && attendee.position && 
+            attendee.name.trim().toLowerCase() === employee.name.trim().toLowerCase() && 
+            attendee.position.trim().toLowerCase() === employee.position.trim().toLowerCase()
         );
         
         if (existingAttendee) {
+            console.log('중복된 직원 발견:', existingAttendee);
             alert('이미 참석자 명단에 등록된 직원입니다.');
             return;
         }
