@@ -152,13 +152,6 @@ class SeminarPlanningApp {
             }
         });
         
-        // 직원명부용 커스텀 모달 이벤트
-        document.getElementById('employeeModalConfirmBtn').addEventListener('click', () => this.hideEmployeeCustomModal());
-        document.getElementById('employeeCustomModal').addEventListener('click', (e) => {
-            if (e.target.id === 'employeeCustomModal') {
-                this.hideEmployeeCustomModal();
-            }
-        });
         
         // 직원명부 입력 필드 한글 토글 이벤트
         this.setupKoreanInputToggle();
@@ -168,8 +161,6 @@ class SeminarPlanningApp {
             if (e.key === 'Escape') {
                 if (!document.getElementById('customModal').classList.contains('hidden')) {
                     this.hideCustomModal();
-                } else if (!document.getElementById('employeeCustomModal').classList.contains('hidden')) {
-                    this.hideEmployeeCustomModal();
                 }
             }
         });
@@ -4755,13 +4746,13 @@ class SeminarPlanningApp {
         
         // 성명과 이메일만 필수 체크
         if (!employee.name) {
-            this.showEmployeeCustomModal('성명을 입력해주세요.', 'warning', 'fas fa-exclamation-triangle');
+            alert('성명을 입력해주세요.');
             isValid = false;
         } else if (!employee.email) {
-            this.showEmployeeCustomModal('이메일을 입력해주세요.', 'warning', 'fas fa-exclamation-triangle');
+            alert('이메일을 입력해주세요.');
             isValid = false;
         } else if (!this.isValidEmail(employee.email)) {
-            this.showEmployeeCustomModal('올바른 이메일 형식을 입력해주세요.', 'error', 'fas fa-times-circle');
+            alert('올바른 이메일 형식을 입력해주세요.');
             isValid = false;
         }
         
@@ -4817,13 +4808,12 @@ class SeminarPlanningApp {
     
     // 직원 성공 메시지
     showEmployeeSuccess(message) {
-
-        this.showEmployeeCustomModal(message, 'success', 'fas fa-check-circle');
+        alert(message);
     }
     
     // 직원 에러 메시지
     showEmployeeError(message) {
-        this.showEmployeeCustomModal(message, 'error', 'fas fa-times-circle');
+        alert(message);
     }
     
     // 직원을 참석자 명단에 추가
@@ -4843,7 +4833,7 @@ class SeminarPlanningApp {
         
         if (existingAttendee) {
             console.log('중복된 직원 발견:', existingAttendee);
-            this.showEmployeeCustomModal('이미 참석자 명단에 등록된 직원입니다.', 'warning', 'fas fa-exclamation-triangle');
+            alert('이미 참석자 명단에 등록된 직원입니다.');
             return;
         }
         
@@ -4870,7 +4860,7 @@ class SeminarPlanningApp {
         const searchTerm = document.getElementById('employeeSearchInput').value.trim();
         
         if (!searchTerm) {
-            this.showEmployeeCustomModal('검색할 성명을 입력해주세요.', 'warning', 'fas fa-search');
+            alert('검색할 성명을 입력해주세요.');
             return;
         }
         
@@ -4883,9 +4873,9 @@ class SeminarPlanningApp {
         this.renderEmployeeTable();
         
         if (this.filteredEmployeeList.length === 0) {
-            this.showEmployeeCustomModal(`'${searchTerm}'에 해당하는 직원을 찾을 수 없습니다.`, 'warning', 'fas fa-search');
+            alert(`'${searchTerm}'에 해당하는 직원을 찾을 수 없습니다.`);
         } else {
-            this.showEmployeeCustomModal(`'${searchTerm}' 검색 결과: ${this.filteredEmployeeList.length}명의 직원을 찾았습니다.`, 'success', 'fas fa-check-circle');
+            alert(`'${searchTerm}' 검색 결과: ${this.filteredEmployeeList.length}명의 직원을 찾았습니다.`);
         }
     }
     
@@ -4947,108 +4937,6 @@ class SeminarPlanningApp {
         }, 300);
     }
     
-    // 직원명부용 커스텀 모달 표시
-    showEmployeeCustomModal(message, type = 'info', icon = 'fas fa-info-circle') {
-        console.log('직원명부용 모달 표시 시도:', message, type);
-        
-        const modal = document.getElementById('employeeCustomModal');
-        const modalIcon = document.getElementById('employeeModalIcon');
-        const modalTitle = document.getElementById('employeeModalTitle');
-        const modalMessage = document.getElementById('employeeModalMessage');
-        const iconContainer = modal.querySelector('.modal-icon');
-        
-        if (!modal) {
-            console.error('직원명부용 모달 요소를 찾을 수 없습니다.');
-            return;
-        }
-        
-        // 아이콘 설정
-        modalIcon.className = icon;
-        
-        // 타입별 제목 설정
-        const titles = {
-            'success': '성공',
-            'error': '오류',
-            'warning': '경고',
-            'info': '알림'
-        };
-        
-        modalTitle.textContent = titles[type] || '알림';
-        modalMessage.textContent = message;
-        
-        // 아이콘 컨테이너 클래스 설정
-        iconContainer.className = `modal-icon ${type}`;
-        
-        // 모달 표시
-        modal.classList.remove('hidden');
-        modal.classList.add('show');
-        modal.style.display = 'flex';
-        modal.style.zIndex = '70';
-        
-        console.log('모달 표시 완료, z-index:', modal.style.zIndex);
-        
-        // 애니메이션을 위한 약간의 지연
-        setTimeout(() => {
-            const container = modal.querySelector('.modal-container');
-            if (container) {
-                container.style.transform = 'scale(1)';
-                container.style.opacity = '1';
-            }
-        }, 10);
-    }
-    
-    // 직원명부용 커스텀 모달 숨기기
-    hideEmployeeCustomModal() {
-        const modal = document.getElementById('employeeCustomModal');
-        const container = modal.querySelector('.modal-container');
-        
-        container.style.transform = 'scale(0.95)';
-        container.style.opacity = '0';
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.classList.remove('show');
-            
-            // 직원명부 모달 강제 재활성화
-            this.reactivateEmployeeModal();
-        }, 300);
-    }
-    
-    // 직원명부 모달 재활성화
-    reactivateEmployeeModal() {
-        const employeeModal = document.getElementById('employeeModal');
-        
-        if (employeeModal) {
-            // 직원명부 모달 강제 표시
-            employeeModal.classList.remove('hidden');
-            employeeModal.style.display = 'flex';
-            employeeModal.style.zIndex = '50';
-            employeeModal.style.opacity = '1';
-            
-            // 직원명부 모달 컨텐츠도 활성화
-            const modalContent = employeeModal.querySelector('.employee-modal-content');
-            if (modalContent) {
-                modalContent.style.opacity = '1';
-                modalContent.style.transform = 'scale(1)';
-            }
-            
-            // 성명 입력 필드에 포커스 설정 (더 자연스럽게)
-            const nameInput = document.getElementById('employeeName');
-            if (nameInput) {
-                setTimeout(() => {
-                    // 한글 입력 모드 먼저 설정
-                    this.setKoreanInputMode(nameInput);
-                    
-                    // 약간의 지연 후 포커스 설정
-                    setTimeout(() => {
-                        nameInput.focus();
-                    }, 100);
-                }, 500);
-            }
-            
-            console.log('직원명부 모달 재활성화 완료');
-        }
-    }
     
     // 한글 입력 토글 설정
     setupKoreanInputToggle() {
