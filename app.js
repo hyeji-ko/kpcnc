@@ -5068,93 +5068,8 @@ class SeminarPlanningApp {
         
         // 한글 입력을 위한 추가 속성 설정
         input.setAttribute('data-korean-mode', 'true');
-        
-        // 입력 힌트 표시
-        this.showKoreanInputHint(input);
-        
-        // 사용자에게 한글 입력 안내
-        this.showKoreanInputGuide(input);
-        
-        // 키보드 단축키 안내
-        this.showKeyboardShortcutGuide(input);
     }
     
-    // 키보드 단축키 안내 표시
-    showKeyboardShortcutGuide(input) {
-        // 기존 단축키 안내 제거
-        const existingShortcut = input.parentNode.querySelector('.keyboard-shortcut');
-        if (existingShortcut) {
-            existingShortcut.remove();
-        }
-        
-        // 새 단축키 안내 생성
-        const shortcut = document.createElement('div');
-        shortcut.className = 'keyboard-shortcut text-xs text-gray-600 mt-1';
-        shortcut.innerHTML = `
-            <div class="flex items-center space-x-4">
-                <span class="flex items-center space-x-1">
-                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Ctrl</kbd>
-                    <span>+</span>
-                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Space</kbd>
-                    <span class="text-gray-500">또는</span>
-                </span>
-                <span class="flex items-center space-x-1">
-                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Alt</kbd>
-                    <span>+</span>
-                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Shift</kbd>
-                </span>
-            </div>
-        `;
-        shortcut.style.opacity = '0.7';
-        
-        input.parentNode.appendChild(shortcut);
-        
-        // 10초 후 안내 제거
-        setTimeout(() => {
-            if (shortcut.parentNode) {
-                shortcut.style.opacity = '0';
-                setTimeout(() => {
-                    if (shortcut.parentNode) {
-                        shortcut.remove();
-                    }
-                }, 300);
-            }
-        }, 10000);
-    }
-    
-    // 한글 입력 안내 표시
-    showKoreanInputGuide(input) {
-        // 기존 안내 제거
-        const existingGuide = input.parentNode.querySelector('.korean-guide');
-        if (existingGuide) {
-            existingGuide.remove();
-        }
-        
-        // 새 안내 생성
-        const guide = document.createElement('div');
-        guide.className = 'korean-guide text-xs text-orange-500 mt-1 font-semibold';
-        guide.innerHTML = `
-            <div class="flex items-center space-x-2">
-                <span>💡</span>
-                <span>한글 입력을 위해 키보드 <kbd class="px-1 py-0.5 bg-gray-200 rounded text-gray-700 font-mono text-xs">한/영</kbd> 키를 눌러주세요</span>
-            </div>
-        `;
-        guide.style.opacity = '0.8';
-        
-        input.parentNode.appendChild(guide);
-        
-        // 7초 후 안내 제거
-        setTimeout(() => {
-            if (guide.parentNode) {
-                guide.style.opacity = '0';
-                setTimeout(() => {
-                    if (guide.parentNode) {
-                        guide.remove();
-                    }
-                }, 300);
-            }
-        }, 7000);
-    }
     
     // 한글 입력 처리
     handleKoreanInput(e, input) {
@@ -5187,34 +5102,6 @@ class SeminarPlanningApp {
         input.removeAttribute('data-composing');
     }
     
-    // 한글 입력 힌트 표시
-    showKoreanInputHint(input) {
-        // 기존 힌트 제거
-        const existingHint = input.parentNode.querySelector('.korean-hint');
-        if (existingHint) {
-            existingHint.remove();
-        }
-        
-        // 새 힌트 생성
-        const hint = document.createElement('div');
-        hint.className = 'korean-hint text-xs text-blue-500 mt-1';
-        hint.textContent = '한글 입력 모드';
-        hint.style.opacity = '0.7';
-        
-        input.parentNode.appendChild(hint);
-        
-        // 3초 후 힌트 제거
-        setTimeout(() => {
-            if (hint.parentNode) {
-                hint.style.opacity = '0';
-                setTimeout(() => {
-                    if (hint.parentNode) {
-                        hint.remove();
-                    }
-                }, 300);
-            }
-        }, 3000);
-    }
 } 
 
 // 앱 초기화

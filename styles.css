@@ -676,42 +676,6 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-/* 한글 입력 힌트 스타일 */
-.korean-hint {
-    transition: opacity 0.3s ease;
-    font-weight: 500;
-    color: #3b82f6;
-}
-
-.korean-hint::before {
-    content: "🔤 ";
-    margin-right: 4px;
-}
-
-/* 한글 입력 안내 스타일 */
-.korean-guide {
-    transition: opacity 0.3s ease;
-    font-weight: 600;
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
-    padding: 4px 8px;
-    border-radius: 4px;
-    border-left: 3px solid #f59e0b;
-}
-
-/* 키보드 단축키 스타일 */
-.keyboard-shortcut {
-    transition: opacity 0.3s ease;
-}
-
-.keyboard-shortcut kbd {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 10px;
-    padding: 2px 4px;
-    border: 1px solid #d1d5db;
-    border-radius: 3px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
 
 /* 한글 입력 필드 스타일 */
 input[lang="ko"] {
