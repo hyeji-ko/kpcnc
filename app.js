@@ -85,7 +85,7 @@ class SeminarPlanningApp {
         this.bindEvents();
         await this.loadInitialData();
         this.addDefaultRows();
-        this.loadEmployeeData();
+        await this.loadEmployeeData();
         
         // 초기화 시 스케치 버튼 상태 확인
         setTimeout(() => {
@@ -4492,10 +4492,10 @@ class SeminarPlanningApp {
     // ==================== 직원명부 모달 관련 메서드 ====================
     
     // 직원명부 모달 표시
-    showEmployeeModal() {
+    async showEmployeeModal() {
         const modal = document.getElementById('employeeModal');
         modal.classList.remove('hidden');
-        this.loadEmployeeData();
+        await this.loadEmployeeData();
         this.resetEmployeeForm();
     }
     
@@ -4507,19 +4507,35 @@ class SeminarPlanningApp {
     }
     
     // 직원 데이터 로드
-    loadEmployeeData() {
-        const savedData = localStorage.getItem('employeeList');
-        if (savedData) {
-            this.employeeList = JSON.parse(savedData);
-        } else {
+    async loadEmployeeData() {
+        try {
+            const result = await window.loadAllEmployees();
+            if (result.success) {
+                this.employeeList = result.data;
+            } else {
+                this.employeeList = [];
+                console.error('직원 데이터 로드 실패:', result.message);
+            }
+        } catch (error) {
+            console.error('직원 데이터 로드 오류:', error);
             this.employeeList = [];
         }
         this.renderEmployeeTable();
     }
     
-    // 직원 데이터 저장
-    saveEmployeeData() {
-        localStorage.setItem('employeeList', JSON.stringify(this.employeeList));
+    // 직원 데이터 저장 (개별 직원 저장)
+    async saveEmployeeData(employeeData) {
+        try {
+            const result = await window.saveEmployeeData(employeeData);
+            if (result.success) {
+                return { success: true, message: result.message };
+            } else {
+                return { success: false, message: result.message };
+            }
+        } catch (error) {
+            console.error('직원 데이터 저장 오류:', error);
+            return { success: false, message: '직원 저장 중 오류가 발생했습니다.' };
+        }
     }
     
     // 직원 테이블 렌더링
@@ -4573,7 +4589,7 @@ class SeminarPlanningApp {
     }
     
     // 직원 추가
-    addEmployee() {
+    async addEmployee() {
         const employee = this.getEmployeeFormData();
         
         if (!this.validateEmployeeForm(employee)) {
@@ -4586,18 +4602,29 @@ class SeminarPlanningApp {
             return;
         }
         
-        this.employeeList.push(employee);
-        this.saveEmployeeData();
-        this.renderEmployeeTable();
-        this.resetEmployeeForm();
-        this.showEmployeeSuccess('직원이 성공적으로 등록되었습니다.');
+        try {
+            const result = await this.saveEmployeeData(employee);
+            if (result.success) {
+                // 로컬 리스트에 추가
+                this.employeeList.push(employee);
+                this.renderEmployeeTable();
+                this.resetEmployeeForm();
+                this.showEmployeeSuccess('직원이 성공적으로 등록되었습니다.');
+            } else {
+                this.showEmployeeError(result.message);
+            }
+        } catch (error) {
+            console.error('직원 추가 오류:', error);
+            this.showEmployeeError('직원 추가 중 오류가 발생했습니다.');
+        }
     }
     
     // 직원 수정
-    updateEmployee() {
+    async updateEmployee() {
         if (this.selectedEmployeeIndex === -1) return;
         
         const employee = this.getEmployeeFormData();
+        const originalEmployee = this.employeeList[this.selectedEmployeeIndex];
         
         if (!this.validateEmployeeForm(employee)) {
             return;
@@ -4609,23 +4636,45 @@ class SeminarPlanningApp {
             return;
         }
         
-        this.employeeList[this.selectedEmployeeIndex] = employee;
-        this.saveEmployeeData();
-        this.renderEmployeeTable();
-        this.resetEmployeeForm();
-        this.showEmployeeSuccess('직원 정보가 성공적으로 수정되었습니다.');
+        try {
+            const result = await window.updateEmployeeData(originalEmployee.email, employee);
+            if (result.success) {
+                // 로컬 리스트 업데이트
+                this.employeeList[this.selectedEmployeeIndex] = employee;
+                this.renderEmployeeTable();
+                this.resetEmployeeForm();
+                this.showEmployeeSuccess('직원 정보가 성공적으로 수정되었습니다.');
+            } else {
+                this.showEmployeeError(result.message);
+            }
+        } catch (error) {
+            console.error('직원 수정 오류:', error);
+            this.showEmployeeError('직원 수정 중 오류가 발생했습니다.');
+        }
     }
     
     // 직원 삭제
-    deleteEmployee() {
+    async deleteEmployee() {
         if (this.selectedEmployeeIndex === -1) return;
         
+        const employee = this.employeeList[this.selectedEmployeeIndex];
+        
         if (confirm('정말로 이 직원을 삭제하시겠습니까?')) {
-            this.employeeList.splice(this.selectedEmployeeIndex, 1);
-            this.saveEmployeeData();
-            this.renderEmployeeTable();
-            this.resetEmployeeForm();
-            this.showEmployeeSuccess('직원이 성공적으로 삭제되었습니다.');
+            try {
+                const result = await window.deleteEmployeeData(employee.email);
+                if (result.success) {
+                    // 로컬 리스트에서 삭제
+                    this.employeeList.splice(this.selectedEmployeeIndex, 1);
+                    this.renderEmployeeTable();
+                    this.resetEmployeeForm();
+                    this.showEmployeeSuccess('직원이 성공적으로 삭제되었습니다.');
+                } else {
+                    this.showEmployeeError(result.message);
+                }
+            } catch (error) {
+                console.error('직원 삭제 오류:', error);
+                this.showEmployeeError('직원 삭제 중 오류가 발생했습니다.');
+            }
         }
     }
     

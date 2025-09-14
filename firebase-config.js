@@ -415,6 +415,142 @@ function checkFirebaseStatus() {
     }
 }
 
+// ==================== 직원 데이터 Firebase 함수들 ====================
+
+// 직원 데이터 저장 함수
+async function saveEmployeeData(employeeData) {
+    try {
+        if (useLocalStorage) {
+            // 로컬 스토리지 사용
+            const existingEmployees = JSON.parse(localStorage.getItem('employeeList') || '[]');
+            existingEmployees.push(employeeData);
+            localStorage.setItem('employeeList', JSON.stringify(existingEmployees));
+            return { success: true, message: '로컬 스토리지에 직원이 저장되었습니다.' };
+        } else {
+            // Firebase 사용 - 이메일을 문서 ID로 사용
+            const docRef = db.collection('employees').doc(employeeData.email);
+            await docRef.set({
+                ...employeeData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            return { success: true, message: 'Firebase에 직원이 저장되었습니다.' };
+        }
+    } catch (error) {
+        console.error('직원 데이터 저장 오류:', error);
+        return { success: false, message: '직원 저장 중 오류가 발생했습니다: ' + error.message };
+    }
+}
+
+// 모든 직원 데이터 조회 함수
+async function loadAllEmployees() {
+    try {
+        if (useLocalStorage) {
+            // 로컬 스토리지 사용
+            const data = localStorage.getItem('employeeList');
+            if (data) {
+                return { success: true, data: JSON.parse(data) };
+            }
+            return { success: true, data: [] };
+        } else {
+            // Firebase 사용
+            const snapshot = await db.collection('employees').orderBy('createdAt', 'desc').get();
+            const employees = [];
+            snapshot.forEach(doc => {
+                employees.push({ id: doc.id, ...doc.data() });
+            });
+            return { success: true, data: employees };
+        }
+    } catch (error) {
+        console.error('직원 데이터 조회 오류:', error);
+        return { success: false, message: '직원 조회 중 오류가 발생했습니다: ' + error.message };
+    }
+}
+
+// 특정 직원 데이터 조회 함수 (이메일로)
+async function loadEmployeeByEmail(email) {
+    try {
+        if (useLocalStorage) {
+            // 로컬 스토리지 사용
+            const data = localStorage.getItem('employeeList');
+            if (data) {
+                const employees = JSON.parse(data);
+                const employee = employees.find(emp => emp.email === email);
+                return employee || null;
+            }
+            return null;
+        } else {
+            // Firebase 사용
+            const docRef = db.collection('employees').doc(email);
+            const doc = await docRef.get();
+            if (doc.exists) {
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        }
+    } catch (error) {
+        console.error('직원 데이터 조회 오류:', error);
+        return null;
+    }
+}
+
+// 직원 데이터 업데이트 함수
+async function updateEmployeeData(email, employeeData) {
+    try {
+        if (useLocalStorage) {
+            // 로컬 스토리지 사용
+            const data = localStorage.getItem('employeeList');
+            if (data) {
+                const employees = JSON.parse(data);
+                const index = employees.findIndex(emp => emp.email === email);
+                if (index !== -1) {
+                    employees[index] = { ...employeeData, email };
+                    localStorage.setItem('employeeList', JSON.stringify(employees));
+                    return { success: true, message: '로컬 스토리지에서 직원이 업데이트되었습니다.' };
+                }
+                return { success: false, message: '업데이트할 직원을 찾을 수 없습니다.' };
+            }
+            return { success: false, message: '저장된 직원 데이터가 없습니다.' };
+        } else {
+            // Firebase 사용
+            const docRef = db.collection('employees').doc(email);
+            await docRef.update({
+                ...employeeData,
+                email: email, // 이메일은 변경되지 않도록 보장
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return { success: true, message: 'Firebase에서 직원이 업데이트되었습니다.' };
+        }
+    } catch (error) {
+        console.error('직원 데이터 업데이트 오류:', error);
+        return { success: false, message: '직원 업데이트 중 오류가 발생했습니다: ' + error.message };
+    }
+}
+
+// 직원 데이터 삭제 함수
+async function deleteEmployeeData(email) {
+    try {
+        if (useLocalStorage) {
+            // 로컬 스토리지 사용
+            const data = localStorage.getItem('employeeList');
+            if (data) {
+                const employees = JSON.parse(data);
+                const filteredEmployees = employees.filter(emp => emp.email !== email);
+                localStorage.setItem('employeeList', JSON.stringify(filteredEmployees));
+                return { success: true, message: '로컬 스토리지에서 직원이 삭제되었습니다.' };
+            }
+            return { success: false, message: '저장된 직원 데이터가 없습니다.' };
+        } else {
+            // Firebase 사용
+            await db.collection('employees').doc(email).delete();
+            return { success: true, message: 'Firebase에서 직원이 삭제되었습니다.' };
+        }
+    } catch (error) {
+        console.error('직원 데이터 삭제 오류:', error);
+        return { success: false, message: '직원 삭제 중 오류가 발생했습니다: ' + error.message };
+    }
+}
+
 // 전역 함수로 노출 (HTML에서 호출하기 위해)
 window.saveData = saveData;
 window.loadData = loadData;
@@ -424,6 +560,11 @@ window.loadAllPlans = loadAllPlans;
 window.saveResultData = saveResultData;
 window.loadResultData = loadResultData;
 window.loadResultDataByKey = loadResultDataByKey;
+window.saveEmployeeData = saveEmployeeData;
+window.loadAllEmployees = loadAllEmployees;
+window.loadEmployeeByEmail = loadEmployeeByEmail;
+window.updateEmployeeData = updateEmployeeData;
+window.deleteEmployeeData = deleteEmployeeData;
 window.db = db;
 window.useLocalStorage = useLocalStorage;
 
