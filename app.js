@@ -4817,6 +4817,7 @@ class SeminarPlanningApp {
     
     // 직원 성공 메시지
     showEmployeeSuccess(message) {
+
         this.showEmployeeCustomModal(message, 'success', 'fas fa-check-circle');
     }
     
