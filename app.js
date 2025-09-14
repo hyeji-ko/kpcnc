@@ -4948,11 +4948,18 @@ class SeminarPlanningApp {
     
     // 직원명부용 커스텀 모달 표시
     showEmployeeCustomModal(message, type = 'info', icon = 'fas fa-info-circle') {
+        console.log('직원명부용 모달 표시 시도:', message, type);
+        
         const modal = document.getElementById('employeeCustomModal');
         const modalIcon = document.getElementById('employeeModalIcon');
         const modalTitle = document.getElementById('employeeModalTitle');
         const modalMessage = document.getElementById('employeeModalMessage');
         const iconContainer = modal.querySelector('.modal-icon');
+        
+        if (!modal) {
+            console.error('직원명부용 모달 요소를 찾을 수 없습니다.');
+            return;
+        }
         
         // 아이콘 설정
         modalIcon.className = icon;
@@ -4974,11 +4981,18 @@ class SeminarPlanningApp {
         // 모달 표시
         modal.classList.remove('hidden');
         modal.classList.add('show');
+        modal.style.display = 'flex';
+        modal.style.zIndex = '70';
+        
+        console.log('모달 표시 완료, z-index:', modal.style.zIndex);
         
         // 애니메이션을 위한 약간의 지연
         setTimeout(() => {
-            modal.querySelector('.modal-container').style.transform = 'scale(1)';
-            modal.querySelector('.modal-container').style.opacity = '1';
+            const container = modal.querySelector('.modal-container');
+            if (container) {
+                container.style.transform = 'scale(1)';
+                container.style.opacity = '1';
+            }
         }, 10);
     }
     
