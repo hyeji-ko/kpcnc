@@ -4810,7 +4810,7 @@ class SeminarPlanningApp {
         );
         
         if (existingAttendee) {
-            this.showToast('이미 참석자 명단에 등록된 직원입니다.', 'error');
+            alert('이미 참석자 명단에 등록된 직원입니다.');
             return;
         }
         
@@ -4825,7 +4825,7 @@ class SeminarPlanningApp {
         
         this.currentData.attendeeList.push(newAttendee);
         this.populateAttendeeTable();
-        this.showToast(`${employee.name}님이 참석자 명단에 추가되었습니다.`, 'success');
+        alert(`${employee.name}님이 참석자 명단에 추가되었습니다.`);
         
         // 모달 닫기
         this.hideEmployeeModal();
