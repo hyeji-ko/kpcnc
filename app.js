@@ -4714,31 +4714,11 @@ class SeminarPlanningApp {
         
         let isValid = true;
         
-        if (!employee.name) {
-            this.showEmployeeFieldError('employeeName', '성명을 입력해주세요.');
-            isValid = false;
-        }
-        
-        if (!employee.position) {
-            this.showEmployeeFieldError('employeePosition', '직급을 입력해주세요.');
-            isValid = false;
-        }
-        
-        if (!employee.department) {
-            this.showEmployeeFieldError('employeeDepartment', '소속을 입력해주세요.');
-            isValid = false;
-        }
-        
-        if (!employee.work) {
-            this.showEmployeeFieldError('employeeWork', '업무를 입력해주세요.');
-            isValid = false;
-        }
-        
-        if (!employee.email) {
-            this.showEmployeeFieldError('employeeEmail', '이메일을 입력해주세요.');
+        if (!employee.name || !employee.position || !employee.department || !employee.work || !employee.email) {
+            alert('직원명부를 입력하세요.');
             isValid = false;
         } else if (!this.isValidEmail(employee.email)) {
-            this.showEmployeeFieldError('employeeEmail', '올바른 이메일 형식을 입력해주세요.');
+            alert('올바른 이메일 형식을 입력해주세요.');
             isValid = false;
         }
         
