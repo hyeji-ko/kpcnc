@@ -5032,14 +5032,18 @@ class SeminarPlanningApp {
                 modalContent.style.transform = 'scale(1)';
             }
             
-            // 성명 입력 필드에 포커스 설정
+            // 성명 입력 필드에 포커스 설정 (더 자연스럽게)
             const nameInput = document.getElementById('employeeName');
             if (nameInput) {
                 setTimeout(() => {
-                    nameInput.focus();
-                    // 한글 입력 모드 설정
+                    // 한글 입력 모드 먼저 설정
                     this.setKoreanInputMode(nameInput);
-                }, 200);
+                    
+                    // 약간의 지연 후 포커스 설정
+                    setTimeout(() => {
+                        nameInput.focus();
+                    }, 100);
+                }, 500);
             }
             
             console.log('직원명부 모달 재활성화 완료');
