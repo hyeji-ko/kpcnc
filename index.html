@@ -414,30 +414,6 @@
         </div>
     </div>
 
-    <!-- 직원명부용 커스텀 모달 -->
-    <div id="employeeCustomModal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[70] hidden transition-all duration-300">
-        <div class="modal-container transform scale-95 opacity-0 transition-all duration-300">
-            <div class="modal-content">
-                <!-- 아이콘 영역 -->
-                <div class="modal-icon">
-                    <div class="icon-circle">
-                        <i id="employeeModalIcon" class="fas fa-info-circle"></i>
-                    </div>
-                </div>
-                
-                <!-- 제목 -->
-                <h3 id="employeeModalTitle" class="modal-title">알림</h3>
-                
-                <!-- 메시지 -->
-                <p id="employeeModalMessage" class="modal-message">메시지가 여기에 표시됩니다.</p>
-                
-                <!-- 버튼 -->
-                <button id="employeeModalConfirmBtn" class="modal-button">
-                    <span>확인</span>
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- 조회 결과 모달 -->
     <div id="searchModal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 hidden" style="overflow: hidden;">
@@ -640,7 +616,7 @@
                         </div>
                     </div>
                     
-                    <table class="min-w-full">
+                    <table class="min-w-full employee-table">
                         <thead class="bg-gradient-to-r from-purple-50 to-indigo-50">
                             <tr>
                                 <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider w-20">

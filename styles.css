@@ -392,6 +392,15 @@
     transition: all 0.2s ease;
 }
 
+/* 직원 목록 테이블 헤더 고정 */
+.employee-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(to right, #f3f4f6, #e0e7ff);
+    border-bottom: 2px solid #d1d5db;
+}
+
 .employee-table-row:hover {
     background-color: #f8fafc;
     transform: translateY(-1px);
@@ -497,19 +506,6 @@
     margin: 0 auto;
 }
 
-/* 직원명부용 커스텀 모달 */
-#employeeCustomModal {
-    z-index: 70;
-}
-
-#employeeCustomModal.show {
-    display: flex !important;
-}
-
-#employeeCustomModal.show .modal-container {
-    transform: scale(1);
-    opacity: 1;
-}
 
 .modal-content {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
