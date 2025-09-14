@@ -4570,7 +4570,12 @@ class SeminarPlanningApp {
         
         const displayList = this.isSearchMode ? this.filteredEmployeeList : this.employeeList;
         
-        displayList.forEach((employee, index) => {
+        // 성명 가나다순으로 정렬
+        const sortedList = [...displayList].sort((a, b) => {
+            return a.name.localeCompare(b.name, 'ko');
+        });
+        
+        sortedList.forEach((employee, index) => {
             const row = document.createElement('tr');
             row.className = 'employee-table-row';
             row.innerHTML = `
