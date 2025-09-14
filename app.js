@@ -144,26 +144,11 @@ class SeminarPlanningApp {
         document.getElementById('searchEmployeeBtn').addEventListener('click', () => this.searchEmployees());
         document.getElementById('clearSearchBtn').addEventListener('click', () => this.clearEmployeeSearch());
         
-        // 커스텀 모달 이벤트
-        document.getElementById('modalConfirmBtn').addEventListener('click', () => this.hideCustomModal());
-        document.getElementById('customModal').addEventListener('click', (e) => {
-            if (e.target.id === 'customModal') {
-                this.hideCustomModal();
-            }
-        });
         
         
         // 직원명부 입력 필드 한글 토글 이벤트
         this.setupKoreanInputToggle();
         
-        // ESC 키로 모달 닫기
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                if (!document.getElementById('customModal').classList.contains('hidden')) {
-                    this.hideCustomModal();
-                }
-            }
-        });
         
         // 스케치 관련 이벤트 위임
         document.addEventListener('click', (e) => {
@@ -4892,55 +4877,6 @@ class SeminarPlanningApp {
         this.renderEmployeeTable();
     }
     
-    // 커스텀 모달 표시
-    showCustomModal(message, type = 'info', icon = 'fas fa-info-circle') {
-        const modal = document.getElementById('customModal');
-        const modalIcon = document.getElementById('modalIcon');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalMessage = document.getElementById('modalMessage');
-        const iconContainer = modal.querySelector('.modal-icon');
-        
-        // 아이콘 설정
-        modalIcon.className = icon;
-        
-        // 타입별 제목 설정
-        const titles = {
-            'success': '성공',
-            'error': '오류',
-            'warning': '경고',
-            'info': '알림'
-        };
-        
-        modalTitle.textContent = titles[type] || '알림';
-        modalMessage.textContent = message;
-        
-        // 아이콘 컨테이너 클래스 설정
-        iconContainer.className = `modal-icon ${type}`;
-        
-        // 모달 표시
-        modal.classList.remove('hidden');
-        modal.classList.add('show');
-        
-        // 애니메이션을 위한 약간의 지연
-        setTimeout(() => {
-            modal.querySelector('.modal-container').style.transform = 'scale(1)';
-            modal.querySelector('.modal-container').style.opacity = '1';
-        }, 10);
-    }
-    
-    // 커스텀 모달 숨기기
-    hideCustomModal() {
-        const modal = document.getElementById('customModal');
-        const container = modal.querySelector('.modal-container');
-        
-        container.style.transform = 'scale(0.95)';
-        container.style.opacity = '0';
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.classList.remove('show');
-        }, 300);
-    }
     
     
     // 한글 입력 토글 설정
