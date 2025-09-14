@@ -4783,6 +4783,15 @@ class SeminarPlanningApp {
         });
     }
     
+    // 토스트 메시지 표시 (성공/에러 통합)
+    showToast(message, type) {
+        if (type === 'success') {
+            this.showSuccessToast(message);
+        } else if (type === 'error') {
+            this.showErrorToast(message);
+        }
+    }
+    
     // 직원 성공 메시지
     showEmployeeSuccess(message) {
         this.showToast(message, 'success');
