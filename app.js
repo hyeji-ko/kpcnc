@@ -4817,12 +4817,12 @@ class SeminarPlanningApp {
     
     // 직원 성공 메시지
     showEmployeeSuccess(message) {
-        this.showToast(message, 'success');
+        this.showEmployeeCustomModal(message, 'success', 'fas fa-check-circle');
     }
     
     // 직원 에러 메시지
     showEmployeeError(message) {
-        this.showToast(message, 'error');
+        this.showEmployeeCustomModal(message, 'error', 'fas fa-times-circle');
     }
     
     // 직원을 참석자 명단에 추가
@@ -5057,6 +5057,52 @@ class SeminarPlanningApp {
         
         // 사용자에게 한글 입력 안내
         this.showKoreanInputGuide(input);
+        
+        // 키보드 단축키 안내
+        this.showKeyboardShortcutGuide(input);
+    }
+    
+    // 키보드 단축키 안내 표시
+    showKeyboardShortcutGuide(input) {
+        // 기존 단축키 안내 제거
+        const existingShortcut = input.parentNode.querySelector('.keyboard-shortcut');
+        if (existingShortcut) {
+            existingShortcut.remove();
+        }
+        
+        // 새 단축키 안내 생성
+        const shortcut = document.createElement('div');
+        shortcut.className = 'keyboard-shortcut text-xs text-gray-600 mt-1';
+        shortcut.innerHTML = `
+            <div class="flex items-center space-x-4">
+                <span class="flex items-center space-x-1">
+                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Ctrl</kbd>
+                    <span>+</span>
+                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Space</kbd>
+                    <span class="text-gray-500">또는</span>
+                </span>
+                <span class="flex items-center space-x-1">
+                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Alt</kbd>
+                    <span>+</span>
+                    <kbd class="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Shift</kbd>
+                </span>
+            </div>
+        `;
+        shortcut.style.opacity = '0.7';
+        
+        input.parentNode.appendChild(shortcut);
+        
+        // 10초 후 안내 제거
+        setTimeout(() => {
+            if (shortcut.parentNode) {
+                shortcut.style.opacity = '0';
+                setTimeout(() => {
+                    if (shortcut.parentNode) {
+                        shortcut.remove();
+                    }
+                }, 300);
+            }
+        }, 10000);
     }
     
     // 한글 입력 안내 표시
@@ -5070,12 +5116,17 @@ class SeminarPlanningApp {
         // 새 안내 생성
         const guide = document.createElement('div');
         guide.className = 'korean-guide text-xs text-orange-500 mt-1 font-semibold';
-        guide.innerHTML = '💡 한글 입력을 위해 키보드 한/영 키를 눌러주세요';
+        guide.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <span>💡</span>
+                <span>한글 입력을 위해 키보드 <kbd class="px-1 py-0.5 bg-gray-200 rounded text-gray-700 font-mono text-xs">한/영</kbd> 키를 눌러주세요</span>
+            </div>
+        `;
         guide.style.opacity = '0.8';
         
         input.parentNode.appendChild(guide);
         
-        // 5초 후 안내 제거
+        // 7초 후 안내 제거
         setTimeout(() => {
             if (guide.parentNode) {
                 guide.style.opacity = '0';
@@ -5085,7 +5136,7 @@ class SeminarPlanningApp {
                     }
                 }, 300);
             }
-        }, 5000);
+        }, 7000);
     }
     
     // 한글 입력 처리
