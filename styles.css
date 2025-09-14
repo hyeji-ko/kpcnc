@@ -386,6 +386,110 @@
     text-align: left !important;
 }
 
+/* Employee Modal Styles */
+.employee-table-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.employee-table-row:hover {
+    background-color: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.employee-table-row.selected {
+    background-color: #e0e7ff;
+    border-left: 4px solid #6366f1;
+}
+
+.employee-form-field {
+    position: relative;
+}
+
+.employee-form-field input {
+    transition: all 0.2s ease;
+}
+
+.employee-form-field input:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
+.employee-modal-content {
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Employee table specific styling */
+#employeeTableBody tr td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 12px 16px;
+    vertical-align: middle;
+}
+
+#employeeTableBody tr td:nth-child(5) { /* 업무 컬럼 */
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
+    text-align: left;
+    max-width: 200px;
+}
+
+#employeeTableBody tr td:nth-child(6) { /* 이메일 컬럼 */
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+/* Employee modal button states */
+.employee-btn-group button {
+    transition: all 0.2s ease;
+}
+
+.employee-btn-group button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.employee-btn-group button:active {
+    transform: translateY(0);
+}
+
+/* Employee form validation styles */
+.employee-form-field input.error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.employee-form-field input.success {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Employee table action buttons */
+.employee-action-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.employee-action-btn:hover {
+    transform: scale(1.05);
+}
+
 /* Print styles */
 @media print {
     .no-print {
