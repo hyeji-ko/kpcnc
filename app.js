@@ -4720,7 +4720,18 @@ class SeminarPlanningApp {
     
     // 직원 편집
     editEmployee(index) {
-        const employee = this.employeeList[index];
+        // 현재 표시 중인 목록에서 직원 데이터 가져오기
+        const displayList = this.isSearchMode ? this.filteredEmployeeList : this.employeeList;
+        
+        // 성명 가나다순으로 정렬된 목록에서 해당 인덱스의 직원 가져오기
+        const sortedList = [...displayList].sort((a, b) => {
+            return a.name.localeCompare(b.name, 'ko');
+        });
+        
+        const employee = sortedList[index];
+        
+        // 전체 목록에서 해당 직원의 실제 인덱스 찾기
+        const actualIndex = this.employeeList.findIndex(emp => emp.email === employee.email);
         
         document.getElementById('employeeName').value = employee.name;
         document.getElementById('employeePosition').value = employee.position;
@@ -4733,7 +4744,7 @@ class SeminarPlanningApp {
         document.getElementById('updateEmployee').style.display = 'inline-flex';
         document.getElementById('deleteEmployee').style.display = 'inline-flex';
         
-        this.selectedEmployeeIndex = index;
+        this.selectedEmployeeIndex = actualIndex;
         this.clearEmployeeFormValidation();
     }
     
