@@ -556,3 +556,29 @@ input[lang="ko"] {
         border: 1px solid #000 !important;
     }
 }
+
+/* Gmail 모달 메일 본문 스크롤 강제 적용 */
+#gmailBody {
+    overflow-y: auto !important;
+    max-height: none !important;
+    height: auto !important;
+    min-height: 400px !important;
+}
+
+#gmailBody::-webkit-scrollbar {
+    width: 8px;
+}
+
+#gmailBody::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+#gmailBody::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+#gmailBody::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
