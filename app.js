@@ -22,8 +22,6 @@ class SeminarPlanningApp {
         this.originalSession = null; // 원본 회차 저장
         this.originalDatetime = null; // 원본 일시 저장
         
-        // 첨부파일 관리
-        this.attachedFiles = [];
         
         // 라이브러리 로딩 상태 확인 및 초기화
         this.initializeApp().catch(error => {
@@ -189,9 +187,6 @@ class SeminarPlanningApp {
         document.getElementById('showCcBtn').addEventListener('click', () => this.toggleCcField());
         document.getElementById('showBccBtn').addEventListener('click', () => this.toggleBccField());
         
-        // 파일 입력 이벤트
-        document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileSelect(e));
-        document.getElementById('imageInput').addEventListener('change', (e) => this.handleImageSelect(e));
         
         // 직원명부 입력 필드 한글 토글 이벤트
         this.setupKoreanInputToggle();
@@ -5230,28 +5225,8 @@ class SeminarPlanningApp {
         // HTML을 일반 텍스트로 변환
         const textBody = this.htmlToText(htmlBody);
         
-        // 첨부파일이 있는 경우 처리
-        let bodyWithAttachments = textBody;
-        if (this.attachedFiles && this.attachedFiles.length > 0) {
-            bodyWithAttachments += '\n\n--- 첨부파일 ---\n';
-            
-            // 첨부파일을 Base64로 인코딩하여 본문에 포함
-            for (let i = 0; i < this.attachedFiles.length; i++) {
-                const file = this.attachedFiles[i];
-                try {
-                    const base64Data = await this.fileToBase64(file);
-                    bodyWithAttachments += `\n파일명: ${file.name}\n크기: ${this.formatFileSize(file.size)}\n타입: ${file.type}\n\nBase64 데이터:\n${base64Data}\n\n---\n`;
-                } catch (error) {
-                    console.error('파일 인코딩 오류:', error);
-                    bodyWithAttachments += `\n파일명: ${file.name}\n크기: ${this.formatFileSize(file.size)}\n※ 파일 인코딩 실패\n\n---\n`;
-                }
-            }
-            
-            bodyWithAttachments += '\n※ 위 Base64 데이터를 복사하여 Gmail에서 첨부파일로 사용하거나, 아래 링크에서 파일을 다운로드하세요.\n';
-        }
-        
         // Gmail 메일 링크 생성 (텍스트 본문 사용)
-        let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyWithAttachments)}`;
+        let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(textBody)}`;
         
         // CC 정보가 있으면 추가
         if (cc.trim()) {
@@ -5263,19 +5238,7 @@ class SeminarPlanningApp {
             gmailUrl += `&bcc=${encodeURIComponent(bcc)}`;
         }
         
-        // 첨부파일이 있는 경우 사용자에게 안내 메시지 표시
-        if (this.attachedFiles && this.attachedFiles.length > 0) {
-            const attachmentCount = this.attachedFiles.length;
-            
-            this.showInfoToast(`Gmail이 열렸습니다. 첨부파일 ${attachmentCount}개가 Base64 형태로 메일 본문에 포함되었습니다. 필요시 파일을 다운로드하여 사용하세요.`);
-            
-            // 추가로 파일 다운로드 옵션 제공
-            setTimeout(() => {
-                this.generateAttachmentDownloadLinks();
-            }, 1000);
-        } else {
-            this.showSuccessToast('Gmail이 새 창에서 열렸습니다. 메일을 확인하고 전송해주세요.');
-        }
+        this.showSuccessToast('Gmail이 새 창에서 열렸습니다. 메일을 확인하고 전송해주세요.');
         
         // 새 창에서 Gmail 열기
         window.open(gmailUrl, '_blank');
@@ -5283,37 +5246,6 @@ class SeminarPlanningApp {
         this.hideGmailModal();
     }
     
-    // 파일을 Base64로 변환
-    fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
-    }
-    
-    // 첨부파일 다운로드 링크 생성
-    generateAttachmentDownloadLinks() {
-        if (!this.attachedFiles || this.attachedFiles.length === 0) return;
-        
-        // 임시 다운로드 링크들을 생성하여 새 창에서 열기
-        this.attachedFiles.forEach((file, index) => {
-            setTimeout(() => {
-                const url = URL.createObjectURL(file);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = file.name;
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // URL 해제 (메모리 정리)
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }, index * 500); // 각 파일마다 0.5초 간격으로 다운로드
-        });
-    }
     
     // 포맷팅 툴바 기능들
     changeFontFamily(fontFamily) {
@@ -5379,99 +5311,8 @@ class SeminarPlanningApp {
         bccField.classList.toggle('hidden');
     }
     
-    // 파일 처리 기능
-    handleFileSelect(event) {
-        const files = event.target.files;
-        if (files.length > 0) {
-            this.displayAttachments(files);
-            const fileNames = Array.from(files).map(file => file.name).join(', ');
-            this.showSuccessToast(`${files.length}개 파일이 선택되었습니다: ${fileNames}`);
-        }
-    }
-    
-    // 첨부파일 목록 표시
-    displayAttachments(files) {
-        const attachmentList = document.getElementById('attachmentList');
-        const attachmentItems = document.getElementById('attachmentItems');
-        
-        // 기존 첨부파일 목록 초기화
-        attachmentItems.innerHTML = '';
-        
-        // 각 파일에 대해 첨부파일 항목 생성
-        Array.from(files).forEach((file, index) => {
-            const attachmentItem = document.createElement('div');
-            attachmentItem.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-lg border';
-            attachmentItem.innerHTML = `
-                <div class="flex items-center space-x-3">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-file text-blue-500 text-lg"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate">${file.name}</p>
-                        <p class="text-xs text-gray-500">${this.formatFileSize(file.size)}</p>
-                    </div>
-                </div>
-                <button type="button" class="text-red-500 hover:text-red-700 p-1" onclick="app.removeAttachment(${index})" title="제거">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            attachmentItems.appendChild(attachmentItem);
-        });
-        
-        // 첨부파일 목록 표시
-        attachmentList.classList.remove('hidden');
-        
-        // 첨부파일 데이터 저장
-        this.attachedFiles = Array.from(files);
-    }
-    
-    // 파일 크기 포맷팅
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-    
-    // 첨부파일 제거
-    removeAttachment(index) {
-        if (this.attachedFiles && this.attachedFiles[index]) {
-            this.attachedFiles.splice(index, 1);
-            
-            // 첨부파일 목록 다시 표시
-            if (this.attachedFiles.length > 0) {
-                this.displayAttachments(this.attachedFiles);
-            } else {
-                // 첨부파일이 없으면 목록 숨기기
-                document.getElementById('attachmentList').classList.add('hidden');
-                document.getElementById('fileInput').value = '';
-            }
-            
-            this.showInfoToast('첨부파일이 제거되었습니다.');
-        }
-    }
     
     
-    handleImageSelect(event) {
-        const files = event.target.files;
-        if (files.length > 0) {
-            const file = files[0];
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.maxWidth = '300px';
-                    img.style.height = 'auto';
-                    document.execCommand('insertHTML', false, img.outerHTML);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                this.showErrorToast('이미지 파일만 업로드할 수 있습니다.');
-            }
-        }
-    }
     
     // 유틸리티 함수들
     updateButtonState(buttonId, isActive) {
