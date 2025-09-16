@@ -5144,30 +5144,19 @@ class SeminarPlanningApp {
     }
     
     sendGmailDraft() {
-        const from = document.getElementById('gmailFrom').value;
         const to = document.getElementById('gmailTo').value;
         const cc = document.getElementById('gmailCc').value;
         const bcc = document.getElementById('gmailBcc').value;
         const subject = document.getElementById('gmailSubject').value;
         const body = document.getElementById('gmailBody').innerHTML;
         
-        if (!from.trim()) {
-            this.showErrorToast('보내는 사람 이메일을 입력해주세요.');
-            return;
-        }
-        
         if (!to.trim()) {
             this.showErrorToast('받는 사람 이메일을 입력해주세요.');
             return;
         }
         
-        // Gmail 메일 링크 생성 (보내는 사람 정보 포함)
+        // Gmail 메일 링크 생성
         let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        // 보내는 사람 정보가 있으면 추가 (Gmail에서는 실제로는 로그인된 계정이 발신인이 됩니다)
-        if (from.trim()) {
-            gmailUrl += `&from=${encodeURIComponent(from)}`;
-        }
         
         // CC 정보가 있으면 추가
         if (cc.trim()) {
