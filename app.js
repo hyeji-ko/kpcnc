@@ -5226,7 +5226,7 @@ class SeminarPlanningApp {
         return text;
     }
 
-    sendGmailDraft() {
+    async sendGmailDraft() {
         const to = document.getElementById('gmailTo').value;
         const cc = document.getElementById('gmailCc').value;
         const bcc = document.getElementById('gmailBcc').value;
@@ -5241,8 +5241,28 @@ class SeminarPlanningApp {
         // HTML을 일반 텍스트로 변환
         const textBody = this.htmlToText(htmlBody);
         
+        // 첨부파일이 있는 경우 처리
+        let bodyWithAttachments = textBody;
+        if (this.attachedFiles && this.attachedFiles.length > 0) {
+            bodyWithAttachments += '\n\n--- 첨부파일 ---\n';
+            
+            // 첨부파일을 Base64로 인코딩하여 본문에 포함
+            for (let i = 0; i < this.attachedFiles.length; i++) {
+                const file = this.attachedFiles[i];
+                try {
+                    const base64Data = await this.fileToBase64(file);
+                    bodyWithAttachments += `\n파일명: ${file.name}\n크기: ${this.formatFileSize(file.size)}\n타입: ${file.type}\n\nBase64 데이터:\n${base64Data}\n\n---\n`;
+                } catch (error) {
+                    console.error('파일 인코딩 오류:', error);
+                    bodyWithAttachments += `\n파일명: ${file.name}\n크기: ${this.formatFileSize(file.size)}\n※ 파일 인코딩 실패\n\n---\n`;
+                }
+            }
+            
+            bodyWithAttachments += '\n※ 위 Base64 데이터를 복사하여 Gmail에서 첨부파일로 사용하거나, 아래 링크에서 파일을 다운로드하세요.\n';
+        }
+        
         // Gmail 메일 링크 생성 (텍스트 본문 사용)
-        let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(textBody)}`;
+        let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyWithAttachments)}`;
         
         // CC 정보가 있으면 추가
         if (cc.trim()) {
@@ -5254,11 +5274,56 @@ class SeminarPlanningApp {
             gmailUrl += `&bcc=${encodeURIComponent(bcc)}`;
         }
         
+        // 첨부파일이 있는 경우 사용자에게 안내 메시지 표시
+        if (this.attachedFiles && this.attachedFiles.length > 0) {
+            const attachmentCount = this.attachedFiles.length;
+            
+            this.showInfoToast(`Gmail이 열렸습니다. 첨부파일 ${attachmentCount}개가 Base64 형태로 메일 본문에 포함되었습니다. 필요시 파일을 다운로드하여 사용하세요.`);
+            
+            // 추가로 파일 다운로드 옵션 제공
+            setTimeout(() => {
+                this.generateAttachmentDownloadLinks();
+            }, 1000);
+        } else {
+            this.showSuccessToast('Gmail이 새 창에서 열렸습니다. 메일을 확인하고 전송해주세요.');
+        }
+        
         // 새 창에서 Gmail 열기
         window.open(gmailUrl, '_blank');
         
-        this.showSuccessToast('Gmail이 새 창에서 열렸습니다. 메일을 확인하고 전송해주세요.');
         this.hideGmailModal();
+    }
+    
+    // 파일을 Base64로 변환
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+    
+    // 첨부파일 다운로드 링크 생성
+    generateAttachmentDownloadLinks() {
+        if (!this.attachedFiles || this.attachedFiles.length === 0) return;
+        
+        // 임시 다운로드 링크들을 생성하여 새 창에서 열기
+        this.attachedFiles.forEach((file, index) => {
+            setTimeout(() => {
+                const url = URL.createObjectURL(file);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = file.name;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // URL 해제 (메모리 정리)
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }, index * 500); // 각 파일마다 0.5초 간격으로 다운로드
+        });
     }
     
     // 포맷팅 툴바 기능들
