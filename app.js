@@ -152,6 +152,23 @@ class SeminarPlanningApp {
         document.getElementById('closeGmailModal').addEventListener('click', () => this.hideGmailModal());
         document.getElementById('sendGmailBtn').addEventListener('click', () => this.sendGmailDraft());
         
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('gmailModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    this.hideGmailModal();
+                }
+            }
+        });
+        
+        // 모달 배경 클릭으로 닫기
+        document.getElementById('gmailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'gmailModal') {
+                this.hideGmailModal();
+            }
+        });
+        
         // Gmail 포맷팅 툴바 이벤트
         document.getElementById('fontFamily').addEventListener('change', (e) => this.changeFontFamily(e.target.value));
         document.getElementById('fontSize').addEventListener('change', (e) => this.changeFontSize(e.target.value));
@@ -5065,6 +5082,8 @@ class SeminarPlanningApp {
             // 현재 세미나 정보로 메일 본문 생성
             this.generateGmailContent();
             modal.classList.remove('hidden');
+            // 배경 스크롤 비활성화
+            this.disableBackgroundScroll();
         }
     }
     
@@ -5072,7 +5091,38 @@ class SeminarPlanningApp {
         const modal = document.getElementById('gmailModal');
         if (modal) {
             modal.classList.add('hidden');
+            // 배경 스크롤 활성화
+            this.enableBackgroundScroll();
         }
+    }
+    
+    // 배경 스크롤 비활성화
+    disableBackgroundScroll() {
+        document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = this.getScrollbarWidth() + 'px';
+    }
+    
+    // 배경 스크롤 활성화
+    enableBackgroundScroll() {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+    
+    // 스크롤바 너비 계산
+    getScrollbarWidth() {
+        const outer = document.createElement('div');
+        outer.style.visibility = 'hidden';
+        outer.style.overflow = 'scroll';
+        outer.style.msOverflowStyle = 'scrollbar';
+        document.body.appendChild(outer);
+        
+        const inner = document.createElement('div');
+        outer.appendChild(inner);
+        
+        const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+        outer.parentNode.removeChild(outer);
+        
+        return scrollbarWidth;
     }
     
     // 참석자 명단에서 유효한 이메일 수집
