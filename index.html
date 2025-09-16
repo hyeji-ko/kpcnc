@@ -768,6 +768,10 @@
                 
                 <!-- 보내기 버튼 -->
                 <div id="gmailModalFooter" class="flex items-center justify-end sticky bottom-0 z-10 bg-white border-t border-gray-200 px-6 py-3">
+                    <!-- 숨겨진 파일 입력 요소들 -->
+                    <input type="file" id="fileInput" class="hidden" multiple>
+                    <input type="file" id="imageInput" class="hidden" accept="image/*">
+                    
                     <div class="flex items-center space-x-2">
                         <button id="sendGmailBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors duration-200 flex items-center">
                             <i class="fas fa-paper-plane mr-2"></i>보내기

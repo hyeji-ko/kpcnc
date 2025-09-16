@@ -193,8 +193,6 @@ class SeminarPlanningApp {
         document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileSelect(e));
         document.getElementById('imageInput').addEventListener('change', (e) => this.handleImageSelect(e));
         
-        
-        
         // 직원명부 입력 필드 한글 토글 이벤트
         this.setupKoreanInputToggle();
         
