@@ -5068,6 +5068,19 @@ class SeminarPlanningApp {
             modal.classList.remove('hidden');
             // 배경 스크롤 비활성화
             this.disableBackgroundScroll();
+            
+            // 메일 본문 스크롤 강제 적용
+            setTimeout(() => {
+                const gmailBody = document.getElementById('gmailBody');
+                const scrollContainer = gmailBody.parentElement;
+                if (gmailBody && scrollContainer) {
+                    scrollContainer.style.overflowY = 'scroll';
+                    scrollContainer.style.maxHeight = '500px';
+                    gmailBody.style.height = 'auto';
+                    gmailBody.style.minHeight = '400px';
+                    console.log('스크롤 강제 적용 완료');
+                }
+            }, 100);
         }
     }
     
