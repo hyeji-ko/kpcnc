@@ -655,9 +655,9 @@
 
     <!-- Gmail 새메일 모달 -->
     <div id="gmailModal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 hidden" style="overflow: hidden;">
-        <div class="bg-white rounded-2xl shadow-2xl w-11/12 max-w-4xl max-h-[90vh] overflow-hidden border border-gray-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-11/12 max-w-4xl max-h-[95vh] overflow-hidden border border-gray-200 flex flex-col">
             <!-- 모달 헤더 -->
-            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 flex justify-between items-center">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 flex justify-between items-center flex-shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                         <i class="fas fa-envelope text-lg"></i>
@@ -672,8 +672,9 @@
                 </button>
             </div>
             
-            <!-- 메일 작성 영역 -->
-            <div class="p-6 space-y-4">
+            <!-- 메일 작성 영역 (스크롤 가능) -->
+            <div class="flex-1 overflow-y-auto">
+                <div class="p-6 space-y-4">
                 <!-- 받는 사람 -->
                 <div class="flex items-center space-x-4">
                     <label class="text-sm font-semibold text-gray-700 w-20">받는사람</label>
@@ -752,7 +753,7 @@
                             </button>
                         </div>
                     </div>
-                    <div id="gmailBody" contenteditable="true" class="w-full px-4 py-3 min-h-[300px] resize-none focus:ring-0 focus:outline-none" placeholder="메일 내용을 입력하세요..."></div>
+                    <div id="gmailBody" contenteditable="true" class="w-full px-4 py-3 min-h-[400px] max-h-[500px] overflow-y-auto resize-none focus:ring-0 focus:outline-none" placeholder="메일 내용을 입력하세요..."></div>
                 </div>
                 
                 <!-- 첨부 및 도구 -->
@@ -791,6 +792,7 @@
                             <i class="fas fa-paper-plane mr-2"></i>보내기
                         </button>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

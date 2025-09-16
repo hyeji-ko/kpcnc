@@ -5149,12 +5149,26 @@ class SeminarPlanningApp {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
         
+        // <br> 태그를 줄바꿈으로 변환
+        const brElements = tempDiv.querySelectorAll('br');
+        brElements.forEach(br => {
+            br.replaceWith('\n');
+        });
+        
+        // <p>, <div> 태그를 줄바꿈으로 변환
+        const blockElements = tempDiv.querySelectorAll('p, div');
+        blockElements.forEach(element => {
+            element.insertAdjacentText('beforebegin', '\n');
+            element.insertAdjacentText('afterend', '\n');
+        });
+        
         // HTML 태그를 텍스트로 변환
         let text = tempDiv.textContent || tempDiv.innerText || '';
         
-        // 줄바꿈 처리
-        text = text.replace(/\n\s*\n/g, '\n\n'); // 연속된 줄바꿈을 두 개로 정리
-        text = text.trim();
+        // 줄바꿈 정리
+        text = text.replace(/\n\s*\n\s*\n/g, '\n\n'); // 연속된 3개 이상 줄바꿈을 2개로 정리
+        text = text.replace(/^\s+|\s+$/g, ''); // 앞뒤 공백 제거
+        text = text.replace(/[ \t]+/g, ' '); // 연속된 공백을 하나로 정리
         
         return text;
     }
@@ -5274,7 +5288,7 @@ class SeminarPlanningApp {
     }
     
     insertSignature() {
-        const signature = '\n\n--\n전사 신기술 세미나 관리팀\nKPCNC';
+        const signature = '\n\n--\n전사 신기술 세미나 관리자\nKPCNC';
         document.execCommand('insertText', false, signature);
     }
     
