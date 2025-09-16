@@ -474,6 +474,12 @@ class SeminarPlanningApp {
                            data-index="0" data-field="work">
                 </td>
                 <td class="px-4 py-3 border-b">
+                    <input type="email" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                           placeholder="이메일을 입력하세요" 
+                           data-index="0" data-field="email"
+                           onchange="app.updateAttendeeList(0, 'email', this.value)">
+                </td>
+                <td class="px-4 py-3 border-b">
                     <select class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                             data-index="0" data-field="attendance">
                         <option value="Y">Y</option>
@@ -583,6 +589,12 @@ class SeminarPlanningApp {
                 <input type="text" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                        placeholder="업무를 입력하세요" 
                        data-field="work">
+            </td>
+            <td class="px-4 py-3 border-b">
+                <input type="email" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                       placeholder="이메일을 입력하세요" 
+                       data-field="email"
+                       onchange="app.updateAttendeeList(${rowCount}, 'email', this.value)">
             </td>
             <td class="px-4 py-3 border-b">
                 <select class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
@@ -994,6 +1006,12 @@ class SeminarPlanningApp {
                            data-field="work">
                 </td>
                 <td class="px-4 py-3 border-b">
+                    <input type="email" class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                           placeholder="이메일을 입력하세요" 
+                           data-field="email"
+                           onchange="app.updateAttendeeList(${index}, 'email', this.value)">
+                </td>
+                <td class="px-4 py-3 border-b">
                     <select class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
                             data-field="attendance"
                             onchange="app.updateAttendeeList(${index}, 'attendance', this.value)">
@@ -1038,6 +1056,13 @@ class SeminarPlanningApp {
             if (workInput) {
                 workInput.value = item.work || '';
                 workInput.setAttribute('value', item.work || '');
+            }
+            
+            // 이메일 필드 처리 (이메일 입력)
+            const emailInput = row.querySelector('[data-field="email"]');
+            if (emailInput) {
+                emailInput.value = item.email || '';
+                emailInput.setAttribute('value', item.email || '');
             }
             
             // 참석여부 필드 처리
@@ -1429,6 +1454,8 @@ class SeminarPlanningApp {
             const position = positionInput ? positionInput.value : '';
             const department = departmentInput ? departmentInput.value : '';
             const work = workInput ? workInput.value : '';
+            const emailInput = row.querySelector('input[data-field="email"]');
+            const email = emailInput ? emailInput.value : '';
             const attendance = attendanceSelect?.value || 'N';
             
             // console.log(`참석자 데이터 수집: index=${index}, name=${nameInput?.value}, attendance=${attendance}`);
@@ -1438,6 +1465,7 @@ class SeminarPlanningApp {
                 position: position,
                 department: department,
                 work: work,
+                email: email,
                 attendance: attendance
             });
         });
@@ -4872,6 +4900,7 @@ class SeminarPlanningApp {
             position: employee.position,
             department: employee.department,
             work: employee.work,
+            email: employee.email || '',
             attendance: 'N'
         };
         
