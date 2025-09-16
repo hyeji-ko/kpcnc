@@ -149,6 +149,39 @@ class SeminarPlanningApp {
         document.getElementById('closeGmailModal').addEventListener('click', () => this.hideGmailModal());
         document.getElementById('sendGmailBtn').addEventListener('click', () => this.sendGmailDraft());
         
+        // Gmail 포맷팅 툴바 이벤트
+        document.getElementById('fontFamily').addEventListener('change', (e) => this.changeFontFamily(e.target.value));
+        document.getElementById('fontSize').addEventListener('change', (e) => this.changeFontSize(e.target.value));
+        document.getElementById('boldBtn').addEventListener('click', () => this.toggleBold());
+        document.getElementById('italicBtn').addEventListener('click', () => this.toggleItalic());
+        document.getElementById('underlineBtn').addEventListener('click', () => this.toggleUnderline());
+        document.getElementById('textColor').addEventListener('change', (e) => this.changeTextColor(e.target.value));
+        document.getElementById('highlightColor').addEventListener('change', (e) => this.changeHighlightColor(e.target.value));
+        document.getElementById('alignLeftBtn').addEventListener('click', () => this.alignText('left'));
+        document.getElementById('alignCenterBtn').addEventListener('click', () => this.alignText('center'));
+        document.getElementById('alignRightBtn').addEventListener('click', () => this.alignText('right'));
+        document.getElementById('alignJustifyBtn').addEventListener('click', () => this.alignText('justify'));
+        document.getElementById('orderedListBtn').addEventListener('click', () => this.insertOrderedList());
+        document.getElementById('unorderedListBtn').addEventListener('click', () => this.insertUnorderedList());
+        
+        // Gmail 하단 툴바 이벤트
+        document.getElementById('attachFileBtn').addEventListener('click', () => this.attachFile());
+        document.getElementById('insertLinkBtn').addEventListener('click', () => this.insertLink());
+        document.getElementById('insertEmojiBtn').addEventListener('click', () => this.insertEmoji());
+        document.getElementById('googleDriveBtn').addEventListener('click', () => this.insertGoogleDriveFile());
+        document.getElementById('insertImageBtn').addEventListener('click', () => this.insertImage());
+        document.getElementById('insertSignatureBtn').addEventListener('click', () => this.insertSignature());
+        document.getElementById('moreOptionsBtn').addEventListener('click', () => this.showMoreOptions());
+        document.getElementById('clearContentBtn').addEventListener('click', () => this.clearContent());
+        
+        // CC/BCC 이벤트
+        document.getElementById('showCcBtn').addEventListener('click', () => this.toggleCcField());
+        document.getElementById('showBccBtn').addEventListener('click', () => this.toggleBccField());
+        
+        // 파일 입력 이벤트
+        document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileSelect(e));
+        document.getElementById('imageInput').addEventListener('change', (e) => this.handleImageSelect(e));
+        
         
         
         // 직원명부 입력 필드 한글 토글 이벤트
@@ -5039,6 +5072,25 @@ class SeminarPlanningApp {
         }
     }
     
+    // 참석자 명단에서 유효한 이메일 수집
+    getAttendeeEmails() {
+        const emails = [];
+        
+        if (this.currentData.attendeeList && Array.isArray(this.currentData.attendeeList)) {
+            this.currentData.attendeeList.forEach(attendee => {
+                if (attendee.email && attendee.email.trim()) {
+                    // 이메일 형식 검증
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (emailRegex.test(attendee.email.trim())) {
+                        emails.push(attendee.email.trim());
+                    }
+                }
+            });
+        }
+        
+        return emails;
+    }
+
     generateGmailContent() {
         // 현재 세미나 정보 가져오기
         const session = this.currentData.session || '';
@@ -5047,6 +5099,15 @@ class SeminarPlanningApp {
         const objective = this.currentData.objective || '';
         const attendees = this.currentData.attendees || '';
         const mainContent = document.getElementById('mainResultContent')?.value || '';
+        
+        // 참석자 명단에서 유효한 이메일 수집
+        const attendeeEmails = this.getAttendeeEmails();
+        
+        // 수신인 필드에 이메일 설정
+        const gmailToElement = document.getElementById('gmailTo');
+        if (gmailToElement && attendeeEmails.length > 0) {
+            gmailToElement.value = attendeeEmails.join(', ');
+        }
         
         // 메일 본문 생성 (PDF 실행계획과 동일한 내용)
         let emailBody = `안녕하세요.\n\n`;
@@ -5078,28 +5139,226 @@ class SeminarPlanningApp {
         // 메일 본문 설정
         const gmailBodyElement = document.getElementById('gmailBody');
         if (gmailBodyElement) {
-            gmailBodyElement.value = emailBody;
+            gmailBodyElement.innerHTML = emailBody.replace(/\n/g, '<br>');
         }
     }
     
     sendGmailDraft() {
+        const from = document.getElementById('gmailFrom').value;
         const to = document.getElementById('gmailTo').value;
+        const cc = document.getElementById('gmailCc').value;
+        const bcc = document.getElementById('gmailBcc').value;
         const subject = document.getElementById('gmailSubject').value;
-        const body = document.getElementById('gmailBody').value;
+        const body = document.getElementById('gmailBody').innerHTML;
+        
+        if (!from.trim()) {
+            this.showErrorToast('보내는 사람 이메일을 입력해주세요.');
+            return;
+        }
         
         if (!to.trim()) {
             this.showErrorToast('받는 사람 이메일을 입력해주세요.');
             return;
         }
         
-        // Gmail 메일 링크 생성
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        // Gmail 메일 링크 생성 (보내는 사람 정보 포함)
+        let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // 보내는 사람 정보가 있으면 추가 (Gmail에서는 실제로는 로그인된 계정이 발신인이 됩니다)
+        if (from.trim()) {
+            gmailUrl += `&from=${encodeURIComponent(from)}`;
+        }
+        
+        // CC 정보가 있으면 추가
+        if (cc.trim()) {
+            gmailUrl += `&cc=${encodeURIComponent(cc)}`;
+        }
+        
+        // BCC 정보가 있으면 추가
+        if (bcc.trim()) {
+            gmailUrl += `&bcc=${encodeURIComponent(bcc)}`;
+        }
         
         // 새 창에서 Gmail 열기
         window.open(gmailUrl, '_blank');
         
         this.showSuccessToast('Gmail이 새 창에서 열렸습니다. 메일을 확인하고 전송해주세요.');
         this.hideGmailModal();
+    }
+    
+    // 포맷팅 툴바 기능들
+    changeFontFamily(fontFamily) {
+        document.execCommand('fontName', false, fontFamily);
+    }
+    
+    changeFontSize(fontSize) {
+        document.execCommand('fontSize', false, '7');
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const span = document.createElement('span');
+            span.style.fontSize = fontSize;
+            range.surroundContents(span);
+        }
+    }
+    
+    toggleBold() {
+        document.execCommand('bold', false, null);
+        this.updateButtonState('boldBtn', document.queryCommandState('bold'));
+    }
+    
+    toggleItalic() {
+        document.execCommand('italic', false, null);
+        this.updateButtonState('italicBtn', document.queryCommandState('italic'));
+    }
+    
+    toggleUnderline() {
+        document.execCommand('underline', false, null);
+        this.updateButtonState('underlineBtn', document.queryCommandState('underline'));
+    }
+    
+    changeTextColor(color) {
+        document.execCommand('foreColor', false, color);
+    }
+    
+    changeHighlightColor(color) {
+        document.execCommand('backColor', false, color);
+    }
+    
+    alignText(alignment) {
+        document.execCommand('justify' + alignment.charAt(0).toUpperCase() + alignment.slice(1), false, null);
+        this.updateAlignmentButtons(alignment);
+    }
+    
+    insertOrderedList() {
+        document.execCommand('insertOrderedList', false, null);
+    }
+    
+    insertUnorderedList() {
+        document.execCommand('insertUnorderedList', false, null);
+    }
+    
+    // 하단 툴바 기능들
+    attachFile() {
+        document.getElementById('fileInput').click();
+    }
+    
+    insertLink() {
+        const url = prompt('링크 URL을 입력하세요:');
+        if (url) {
+            const text = prompt('표시할 텍스트를 입력하세요 (선택사항):') || url;
+            document.execCommand('createLink', false, url);
+        }
+    }
+    
+    insertEmoji() {
+        const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        document.execCommand('insertText', false, emoji);
+    }
+    
+    insertGoogleDriveFile() {
+        this.showInfoToast('Google Drive 연동 기능은 추후 구현 예정입니다.');
+    }
+    
+    insertImage() {
+        document.getElementById('imageInput').click();
+    }
+    
+    insertSignature() {
+        const signature = '\n\n--\n전사 신기술 세미나 관리팀\nKPCNC';
+        document.execCommand('insertText', false, signature);
+    }
+    
+    showMoreOptions() {
+        this.showInfoToast('추가 옵션 기능은 추후 구현 예정입니다.');
+    }
+    
+    clearContent() {
+        if (confirm('메일 내용을 모두 삭제하시겠습니까?')) {
+            document.getElementById('gmailBody').innerHTML = '';
+        }
+    }
+    
+    // CC/BCC 토글 기능
+    toggleCcField() {
+        const ccField = document.getElementById('ccField');
+        ccField.classList.toggle('hidden');
+    }
+    
+    toggleBccField() {
+        const bccField = document.getElementById('bccField');
+        bccField.classList.toggle('hidden');
+    }
+    
+    // 파일 처리 기능
+    handleFileSelect(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            const fileNames = Array.from(files).map(file => file.name).join(', ');
+            this.showSuccessToast(`${files.length}개 파일이 선택되었습니다: ${fileNames}`);
+        }
+    }
+    
+    handleImageSelect(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '300px';
+                    img.style.height = 'auto';
+                    document.execCommand('insertHTML', false, img.outerHTML);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                this.showErrorToast('이미지 파일만 업로드할 수 있습니다.');
+            }
+        }
+    }
+    
+    // 유틸리티 함수들
+    updateButtonState(buttonId, isActive) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.style.backgroundColor = isActive ? '#e5e7eb' : 'transparent';
+        }
+    }
+    
+    updateAlignmentButtons(activeAlignment) {
+        const alignments = ['left', 'center', 'right', 'justify'];
+        alignments.forEach(align => {
+            const button = document.getElementById(`align${align.charAt(0).toUpperCase() + align.slice(1)}Btn`);
+            if (button) {
+                button.style.backgroundColor = align === activeAlignment ? '#e5e7eb' : 'transparent';
+            }
+        });
+    }
+    
+    showInfoToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50';
+        toast.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
+        
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
     }
     
 } 

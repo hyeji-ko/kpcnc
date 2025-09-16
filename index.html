@@ -674,14 +674,32 @@
             
             <!-- 메일 작성 영역 -->
             <div class="p-6 space-y-4">
+                <!-- 보내는 사람 -->
+                <div class="flex items-center space-x-4">
+                    <label class="text-sm font-semibold text-gray-700 w-20">보내는사람</label>
+                    <input type="email" id="gmailFrom" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="보내는 사람 이메일을 입력하세요">
+                </div>
+                
                 <!-- 받는 사람 -->
                 <div class="flex items-center space-x-4">
                     <label class="text-sm font-semibold text-gray-700 w-20">받는사람</label>
                     <input type="email" id="gmailTo" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="받는 사람 이메일을 입력하세요">
                     <div class="flex space-x-2 text-sm">
-                        <button class="text-blue-600 hover:text-blue-800 font-medium">참조</button>
-                        <button class="text-blue-600 hover:text-blue-800 font-medium">숨은참조</button>
+                        <button id="showCcBtn" class="text-blue-600 hover:text-blue-800 font-medium">참조</button>
+                        <button id="showBccBtn" class="text-blue-600 hover:text-blue-800 font-medium">숨은참조</button>
                     </div>
+                </div>
+                
+                <!-- 참조 (CC) -->
+                <div id="ccField" class="flex items-center space-x-4 hidden">
+                    <label class="text-sm font-semibold text-gray-700 w-20">참조</label>
+                    <input type="email" id="gmailCc" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="참조 이메일을 입력하세요">
+                </div>
+                
+                <!-- 숨은참조 (BCC) -->
+                <div id="bccField" class="flex items-center space-x-4 hidden">
+                    <label class="text-sm font-semibold text-gray-700 w-20">숨은참조</label>
+                    <input type="email" id="gmailBcc" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="숨은참조 이메일을 입력하세요">
                 </div>
                 
                 <!-- 제목 -->
@@ -694,62 +712,82 @@
                 <div class="border border-gray-300 rounded-lg overflow-hidden">
                     <div class="bg-gray-50 px-4 py-2 border-b border-gray-300">
                         <div class="flex items-center space-x-2 text-sm text-gray-600">
-                            <span class="font-medium">Sans Serif</span>
+                            <select id="fontFamily" class="font-medium bg-transparent border-0 focus:ring-0 text-gray-600">
+                                <option value="Arial, sans-serif">Sans Serif</option>
+                                <option value="Times New Roman, serif">Serif</option>
+                                <option value="Courier New, monospace">Monospace</option>
+                            </select>
                             <i class="fas fa-chevron-down text-xs"></i>
                             <span class="mx-2">|</span>
-                            <span class="font-medium">TT</span>
+                            <select id="fontSize" class="font-medium bg-transparent border-0 focus:ring-0 text-gray-600">
+                                <option value="12px">TT</option>
+                                <option value="10px">10px</option>
+                                <option value="12px">12px</option>
+                                <option value="14px">14px</option>
+                                <option value="16px">16px</option>
+                                <option value="18px">18px</option>
+                                <option value="20px">20px</option>
+                            </select>
                             <i class="fas fa-chevron-down text-xs"></i>
                             <span class="mx-2">|</span>
-                            <button class="font-bold hover:bg-gray-200 px-1 rounded">B</button>
-                            <button class="italic hover:bg-gray-200 px-1 rounded">I</button>
-                            <button class="underline hover:bg-gray-200 px-1 rounded">U</button>
+                            <button id="boldBtn" class="font-bold hover:bg-gray-200 px-1 rounded" title="굵게">B</button>
+                            <button id="italicBtn" class="italic hover:bg-gray-200 px-1 rounded" title="기울임">I</button>
+                            <button id="underlineBtn" class="underline hover:bg-gray-200 px-1 rounded" title="밑줄">U</button>
                             <span class="mx-2">|</span>
-                            <button class="hover:bg-gray-200 px-1 rounded">
+                            <input type="color" id="textColor" class="w-6 h-6 border-0 rounded cursor-pointer" title="글자색" value="#000000">
+                            <input type="color" id="highlightColor" class="w-6 h-6 border-0 rounded cursor-pointer" title="배경색" value="#ffff00">
+                            <span class="mx-2">|</span>
+                            <button id="alignLeftBtn" class="hover:bg-gray-200 px-1 rounded" title="왼쪽 정렬">
                                 <i class="fas fa-align-left"></i>
                             </button>
-                            <button class="hover:bg-gray-200 px-1 rounded">
+                            <button id="alignCenterBtn" class="hover:bg-gray-200 px-1 rounded" title="가운데 정렬">
                                 <i class="fas fa-align-center"></i>
                             </button>
-                            <button class="hover:bg-gray-200 px-1 rounded">
+                            <button id="alignRightBtn" class="hover:bg-gray-200 px-1 rounded" title="오른쪽 정렬">
                                 <i class="fas fa-align-right"></i>
                             </button>
+                            <button id="alignJustifyBtn" class="hover:bg-gray-200 px-1 rounded" title="양쪽 정렬">
+                                <i class="fas fa-align-justify"></i>
+                            </button>
                             <span class="mx-2">|</span>
-                            <button class="hover:bg-gray-200 px-1 rounded">
+                            <button id="orderedListBtn" class="hover:bg-gray-200 px-1 rounded" title="번호 목록">
                                 <i class="fas fa-list-ol"></i>
                             </button>
-                            <button class="hover:bg-gray-200 px-1 rounded">
+                            <button id="unorderedListBtn" class="hover:bg-gray-200 px-1 rounded" title="기호 목록">
                                 <i class="fas fa-list-ul"></i>
                             </button>
                         </div>
                     </div>
-                    <textarea id="gmailBody" rows="12" class="w-full px-4 py-3 border-0 resize-none focus:ring-0 focus:outline-none" placeholder="메일 내용을 입력하세요..."></textarea>
+                    <div id="gmailBody" contenteditable="true" class="w-full px-4 py-3 min-h-[300px] resize-none focus:ring-0 focus:outline-none" placeholder="메일 내용을 입력하세요..."></div>
                 </div>
                 
                 <!-- 첨부 및 도구 -->
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="첨부파일">
+                        <input type="file" id="fileInput" class="hidden" multiple>
+                        <button id="attachFileBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="첨부파일">
                             <i class="fas fa-paperclip"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="링크">
+                        <button id="insertLinkBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="링크">
                             <i class="fas fa-link"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="이모지">
+                        <button id="insertEmojiBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="이모지">
                             <i class="fas fa-smile"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="Google Drive">
+                        <button id="googleDriveBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="Google Drive">
                             <i class="fab fa-google-drive"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="이미지">
+                        <input type="file" id="imageInput" class="hidden" accept="image/*">
+                        <button id="insertImageBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="이미지">
                             <i class="fas fa-image"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="서명">
+                        <button id="insertSignatureBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="서명">
                             <i class="fas fa-signature"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="더보기">
+                        <button id="moreOptionsBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="더보기">
                             <i class="fas fa-ellipsis-h"></i>
                         </button>
-                        <button class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="삭제">
+                        <button id="clearContentBtn" class="text-gray-600 hover:text-gray-800 p-2 rounded-full hover:bg-gray-100" title="내용 삭제">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
