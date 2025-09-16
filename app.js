@@ -128,6 +128,7 @@ class SeminarPlanningApp {
         // 내보내기 버튼들
         document.getElementById('exportPDF').addEventListener('click', () => this.exportToPDF());
         document.getElementById('exportResultPDF').addEventListener('click', () => this.exportResultToPDF());
+        document.getElementById('gmailDraftBtn').addEventListener('click', () => this.showGmailModal());
         
         
         // 메인화면 실시결과 스케치 이벤트는 동적 이벤트 위임으로 처리
@@ -143,6 +144,10 @@ class SeminarPlanningApp {
         document.getElementById('deleteEmployee').addEventListener('click', () => this.deleteEmployee());
         document.getElementById('searchEmployeeBtn').addEventListener('click', () => this.searchEmployees());
         document.getElementById('clearSearchBtn').addEventListener('click', () => this.clearEmployeeSearch());
+        
+        // Gmail 모달 이벤트
+        document.getElementById('closeGmailModal').addEventListener('click', () => this.hideGmailModal());
+        document.getElementById('sendGmailBtn').addEventListener('click', () => this.sendGmailDraft());
         
         
         
@@ -256,18 +261,21 @@ class SeminarPlanningApp {
         }
     }
     
-    // PDF 실시결과 내보내기 버튼 표시/숨김 제어
+    // PDF 실시결과 내보내기 버튼 및 Gmail 초안 작성 버튼 표시/숨김 제어
     toggleExportResultPDFButton() {
         const mainContentElement = document.getElementById('mainResultContent');
         const exportResultPDFButton = document.getElementById('exportResultPDF');
+        const gmailDraftButton = document.getElementById('gmailDraftBtn');
         
-        if (mainContentElement && exportResultPDFButton) {
+        if (mainContentElement && exportResultPDFButton && gmailDraftButton) {
             const hasContent = mainContentElement.value.trim().length > 0;
             
             if (hasContent) {
                 exportResultPDFButton.style.display = 'flex';
+                gmailDraftButton.style.display = 'flex';
             } else {
                 exportResultPDFButton.style.display = 'none';
+                gmailDraftButton.style.display = 'none';
             }
         }
     }
@@ -4983,6 +4991,86 @@ class SeminarPlanningApp {
         input.style.imeMode = 'auto';
         input.removeAttribute('data-korean-mode');
         input.removeAttribute('data-composing');
+    }
+    
+    // Gmail 모달 관련 함수들
+    showGmailModal() {
+        const modal = document.getElementById('gmailModal');
+        if (modal) {
+            // 현재 세미나 정보로 메일 본문 생성
+            this.generateGmailContent();
+            modal.classList.remove('hidden');
+        }
+    }
+    
+    hideGmailModal() {
+        const modal = document.getElementById('gmailModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+    
+    generateGmailContent() {
+        // 현재 세미나 정보 가져오기
+        const session = this.currentData.session || '';
+        const datetime = this.currentData.datetime || '';
+        const location = this.currentData.location || '';
+        const objective = this.currentData.objective || '';
+        const attendees = this.currentData.attendees || '';
+        const mainContent = document.getElementById('mainResultContent')?.value || '';
+        
+        // 메일 본문 생성 (PDF 실행계획과 동일한 내용)
+        let emailBody = `안녕하세요.\n\n`;
+        emailBody += `전사 신기술 세미나 개최에 대해 안내드립니다.\n\n`;
+        
+        if (session) {
+            emailBody += `■ 세미나 개최 회차: ${session}\n`;
+        }
+        if (datetime) {
+            emailBody += `■ 일시: ${datetime}\n`;
+        }
+        if (location) {
+            emailBody += `■ 장소: ${location}\n`;
+        }
+        if (objective) {
+            emailBody += `■ 목표: ${objective}\n`;
+        }
+        if (attendees) {
+            emailBody += `■ 참석 대상: ${attendees}\n`;
+        }
+        
+        if (mainContent) {
+            emailBody += `\n■ 주요 내용:\n${mainContent}\n`;
+        }
+        
+        emailBody += `\n참석 가능 여부를 회신해 주시기 바랍니다.\n\n`;
+        emailBody += `감사합니다.`;
+        
+        // 메일 본문 설정
+        const gmailBodyElement = document.getElementById('gmailBody');
+        if (gmailBodyElement) {
+            gmailBodyElement.value = emailBody;
+        }
+    }
+    
+    sendGmailDraft() {
+        const to = document.getElementById('gmailTo').value;
+        const subject = document.getElementById('gmailSubject').value;
+        const body = document.getElementById('gmailBody').value;
+        
+        if (!to.trim()) {
+            this.showErrorToast('받는 사람 이메일을 입력해주세요.');
+            return;
+        }
+        
+        // Gmail 메일 링크 생성
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // 새 창에서 Gmail 열기
+        window.open(gmailUrl, '_blank');
+        
+        this.showSuccessToast('Gmail이 새 창에서 열렸습니다. 메일을 확인하고 전송해주세요.');
+        this.hideGmailModal();
     }
     
 } 
