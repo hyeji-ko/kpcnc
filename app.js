@@ -22,6 +22,9 @@ class SeminarPlanningApp {
         this.originalSession = null; // 원본 회차 저장
         this.originalDatetime = null; // 원본 일시 저장
         
+        // 첨부파일 관리
+        this.attachedFiles = [];
+        
         // 라이브러리 로딩 상태 확인 및 초기화
         this.initializeApp().catch(error => {
             console.error('앱 초기화 오류:', error);
@@ -181,6 +184,9 @@ class SeminarPlanningApp {
         // 파일 입력 이벤트
         document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileSelect(e));
         document.getElementById('imageInput').addEventListener('change', (e) => this.handleImageSelect(e));
+        
+        // 고정 토글 버튼 이벤트
+        document.getElementById('stickyToggle').addEventListener('click', () => this.toggleSticky());
         
         
         
@@ -5317,8 +5323,95 @@ class SeminarPlanningApp {
     handleFileSelect(event) {
         const files = event.target.files;
         if (files.length > 0) {
+            this.displayAttachments(files);
             const fileNames = Array.from(files).map(file => file.name).join(', ');
             this.showSuccessToast(`${files.length}개 파일이 선택되었습니다: ${fileNames}`);
+        }
+    }
+    
+    // 첨부파일 목록 표시
+    displayAttachments(files) {
+        const attachmentList = document.getElementById('attachmentList');
+        const attachmentItems = document.getElementById('attachmentItems');
+        
+        // 기존 첨부파일 목록 초기화
+        attachmentItems.innerHTML = '';
+        
+        // 각 파일에 대해 첨부파일 항목 생성
+        Array.from(files).forEach((file, index) => {
+            const attachmentItem = document.createElement('div');
+            attachmentItem.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-lg border';
+            attachmentItem.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-file text-blue-500 text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">${file.name}</p>
+                        <p class="text-xs text-gray-500">${this.formatFileSize(file.size)}</p>
+                    </div>
+                </div>
+                <button type="button" class="text-red-500 hover:text-red-700 p-1" onclick="app.removeAttachment(${index})" title="제거">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            attachmentItems.appendChild(attachmentItem);
+        });
+        
+        // 첨부파일 목록 표시
+        attachmentList.classList.remove('hidden');
+        
+        // 첨부파일 데이터 저장
+        this.attachedFiles = Array.from(files);
+    }
+    
+    // 파일 크기 포맷팅
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // 첨부파일 제거
+    removeAttachment(index) {
+        if (this.attachedFiles && this.attachedFiles[index]) {
+            this.attachedFiles.splice(index, 1);
+            
+            // 첨부파일 목록 다시 표시
+            if (this.attachedFiles.length > 0) {
+                this.displayAttachments(this.attachedFiles);
+            } else {
+                // 첨부파일이 없으면 목록 숨기기
+                document.getElementById('attachmentList').classList.add('hidden');
+                document.getElementById('fileInput').value = '';
+            }
+            
+            this.showInfoToast('첨부파일이 제거되었습니다.');
+        }
+    }
+    
+    // 고정 토글 기능
+    toggleSticky() {
+        const toggleBtn = document.getElementById('stickyToggle');
+        const header = document.getElementById('mainHeader');
+        const footer = document.getElementById('mainFooter');
+        
+        if (toggleBtn.classList.contains('active')) {
+            // 고정 해제
+            header.classList.remove('sticky-header');
+            footer.classList.remove('sticky-footer');
+            toggleBtn.classList.remove('active');
+            toggleBtn.innerHTML = '<i class="fas fa-thumbtack mr-2"></i>고정';
+            this.showInfoToast('고정이 해제되었습니다.');
+        } else {
+            // 고정 적용
+            header.classList.add('sticky-header');
+            footer.classList.add('sticky-footer');
+            toggleBtn.classList.add('active');
+            toggleBtn.innerHTML = '<i class="fas fa-thumbtack mr-2"></i>고정됨';
+            this.showSuccessToast('상단/하단이 고정되었습니다.');
         }
     }
     
