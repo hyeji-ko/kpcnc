@@ -5143,20 +5143,39 @@ class SeminarPlanningApp {
         }
     }
     
+    // HTML을 일반 텍스트로 변환하는 함수
+    htmlToText(html) {
+        // 임시 div 요소 생성
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // HTML 태그를 텍스트로 변환
+        let text = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // 줄바꿈 처리
+        text = text.replace(/\n\s*\n/g, '\n\n'); // 연속된 줄바꿈을 두 개로 정리
+        text = text.trim();
+        
+        return text;
+    }
+
     sendGmailDraft() {
         const to = document.getElementById('gmailTo').value;
         const cc = document.getElementById('gmailCc').value;
         const bcc = document.getElementById('gmailBcc').value;
         const subject = document.getElementById('gmailSubject').value;
-        const body = document.getElementById('gmailBody').innerHTML;
+        const htmlBody = document.getElementById('gmailBody').innerHTML;
         
         if (!to.trim()) {
             this.showErrorToast('받는 사람 이메일을 입력해주세요.');
             return;
         }
         
-        // Gmail 메일 링크 생성
-        let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        // HTML을 일반 텍스트로 변환
+        const textBody = this.htmlToText(htmlBody);
+        
+        // Gmail 메일 링크 생성 (텍스트 본문 사용)
+        let gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(textBody)}`;
         
         // CC 정보가 있으면 추가
         if (cc.trim()) {
