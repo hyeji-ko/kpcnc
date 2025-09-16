@@ -185,9 +185,6 @@ class SeminarPlanningApp {
         document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileSelect(e));
         document.getElementById('imageInput').addEventListener('change', (e) => this.handleImageSelect(e));
         
-        // 고정 토글 버튼 이벤트
-        document.getElementById('stickyToggle').addEventListener('click', () => this.toggleSticky());
-        
         
         
         // 직원명부 입력 필드 한글 토글 이벤트
@@ -5392,28 +5389,6 @@ class SeminarPlanningApp {
         }
     }
     
-    // 고정 토글 기능
-    toggleSticky() {
-        const toggleBtn = document.getElementById('stickyToggle');
-        const header = document.getElementById('mainHeader');
-        const footer = document.getElementById('mainFooter');
-        
-        if (toggleBtn.classList.contains('active')) {
-            // 고정 해제
-            header.classList.remove('sticky-header');
-            footer.classList.remove('sticky-footer');
-            toggleBtn.classList.remove('active');
-            toggleBtn.innerHTML = '<i class="fas fa-thumbtack mr-2"></i>고정';
-            this.showInfoToast('고정이 해제되었습니다.');
-        } else {
-            // 고정 적용
-            header.classList.add('sticky-header');
-            footer.classList.add('sticky-footer');
-            toggleBtn.classList.add('active');
-            toggleBtn.innerHTML = '<i class="fas fa-thumbtack mr-2"></i>고정됨';
-            this.showSuccessToast('상단/하단이 고정되었습니다.');
-        }
-    }
     
     handleImageSelect(event) {
         const files = event.target.files;
