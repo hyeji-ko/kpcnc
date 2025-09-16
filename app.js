@@ -184,15 +184,6 @@ class SeminarPlanningApp {
         document.getElementById('orderedListBtn').addEventListener('click', () => this.insertOrderedList());
         document.getElementById('unorderedListBtn').addEventListener('click', () => this.insertUnorderedList());
         
-        // Gmail 하단 툴바 이벤트
-        document.getElementById('attachFileBtn').addEventListener('click', () => this.attachFile());
-        document.getElementById('insertLinkBtn').addEventListener('click', () => this.insertLink());
-        document.getElementById('insertEmojiBtn').addEventListener('click', () => this.insertEmoji());
-        document.getElementById('googleDriveBtn').addEventListener('click', () => this.insertGoogleDriveFile());
-        document.getElementById('insertImageBtn').addEventListener('click', () => this.insertImage());
-        document.getElementById('insertSignatureBtn').addEventListener('click', () => this.insertSignature());
-        document.getElementById('moreOptionsBtn').addEventListener('click', () => this.showMoreOptions());
-        document.getElementById('clearContentBtn').addEventListener('click', () => this.clearContent());
         
         // CC/BCC 이벤트
         document.getElementById('showCcBtn').addEventListener('click', () => this.toggleCcField());
@@ -5378,47 +5369,6 @@ class SeminarPlanningApp {
         document.execCommand('insertUnorderedList', false, null);
     }
     
-    // 하단 툴바 기능들
-    attachFile() {
-        document.getElementById('fileInput').click();
-    }
-    
-    insertLink() {
-        const url = prompt('링크 URL을 입력하세요:');
-        if (url) {
-            const text = prompt('표시할 텍스트를 입력하세요 (선택사항):') || url;
-            document.execCommand('createLink', false, url);
-        }
-    }
-    
-    insertEmoji() {
-        const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        document.execCommand('insertText', false, emoji);
-    }
-    
-    insertGoogleDriveFile() {
-        this.showInfoToast('Google Drive 연동 기능은 추후 구현 예정입니다.');
-    }
-    
-    insertImage() {
-        document.getElementById('imageInput').click();
-    }
-    
-    insertSignature() {
-        const signature = '\n\n--\n전사 신기술 세미나 관리자\nKPCNC';
-        document.execCommand('insertText', false, signature);
-    }
-    
-    showMoreOptions() {
-        this.showInfoToast('추가 옵션 기능은 추후 구현 예정입니다.');
-    }
-    
-    clearContent() {
-        if (confirm('메일 내용을 모두 삭제하시겠습니까?')) {
-            document.getElementById('gmailBody').innerHTML = '';
-        }
-    }
     
     // CC/BCC 토글 기능
     toggleCcField() {
